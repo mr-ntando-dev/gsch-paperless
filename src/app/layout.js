@@ -3,7 +3,7 @@ import { Toaster } from 'react-hot-toast'
 import AuthProvider from '@/components/AuthProvider'
 
 export const metadata = {
-  title: 'GSCH Paperless - Gweru Specialist Children\'s Hospital',
+  title: 'GSCH - Gweru Specialist Children\'s Hospital',
   description: 'Digital Document Management System for Gweru Specialist Children\'s Hospital',
 }
 

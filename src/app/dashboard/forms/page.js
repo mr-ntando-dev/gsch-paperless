@@ -57,7 +57,7 @@ export default function FormsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Digital Forms</h1>
-          <p className="text-sm text-gray-500 mt-1">Create and manage paperless forms for all departments</p>
+          <p className="text-sm text-gray-500 mt-1">Create and manage digital forms for all departments</p>
         </div>
         <button onClick={() => setShowBuilder(true)} className="btn-primary flex items-center space-x-2">
           <span>+</span>

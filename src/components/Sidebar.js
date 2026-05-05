@@ -57,7 +57,6 @@ export default function Sidebar() {
               <Image src="/logo.png" alt="GSCH Logo" width={36} height={36} className="rounded" />
               <div>
                 <h1 className="font-bold text-primary-700 text-sm">GSCH</h1>
-                <p className="text-[10px] text-gray-500">Paperless System</p>
               </div>
             </div>
           )}
