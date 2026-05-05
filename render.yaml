@@ -3,7 +3,8 @@ services:
     name: gsch-paperless
     runtime: node
     plan: free
-    buildCommand: npm install && npx prisma generate && npm run build
+    region: oregon
+    buildCommand: npm install && npx prisma generate && npx prisma db push && npm run build
     startCommand: npm run start
     envVars:
       - key: DATABASE_URL
@@ -22,3 +23,4 @@ databases:
     plan: free
     databaseName: gsch_paperless
     user: gsch_admin
+    region: oregon

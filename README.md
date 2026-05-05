@@ -1,5 +1,8 @@
 # GSCH Paperless - Digital Document Management System
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/mr-ntando-dev/gsch-paperless)
+
+
 **Gweru Specialist Children's Hospital** - Paperless Management System
 
 A comprehensive digital system to eliminate paper across all hospital departments.
