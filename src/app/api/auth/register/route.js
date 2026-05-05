@@ -42,6 +42,18 @@ export async function POST(request) {
       )
     }
 
+    // Validate department is a valid enum value
+    const validDepartments = [
+      'CRD', 'PATIENT_CARE', 'BILLING', 'ACCOUNTS',
+      'KITCHEN', 'SAFETY_MAINTENANCE', 'IT', 'MANAGEMENT', 'HOSPITAL_RELATIONS'
+    ]
+    if (!validDepartments.includes(department)) {
+      return NextResponse.json(
+        { error: 'Invalid department selected.' },
+        { status: 400 }
+      )
+    }
+
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email }
@@ -73,6 +85,29 @@ export async function POST(request) {
     )
   } catch (error) {
     console.error('Registration error:', error)
+    
+    // Provide more specific error messages based on error type
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'An account with this email already exists.' },
+        { status: 409 }
+      )
+    }
+    
+    if (error.code === 'P1001' || error.code === 'P1002') {
+      return NextResponse.json(
+        { error: 'Database connection failed. Please try again later.' },
+        { status: 503 }
+      )
+    }
+
+    if (error.message?.includes("Can't reach database") || error.message?.includes('connect')) {
+      return NextResponse.json(
+        { error: 'Database connection failed. Please try again later.' },
+        { status: 503 }
+      )
+    }
+
     return NextResponse.json(
       { error: 'Something went wrong. Please try again.' },
       { status: 500 }
