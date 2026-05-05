@@ -105,7 +105,7 @@ export default function DocumentsPage() {
           <div className="p-8 text-center text-gray-500">Loading documents...</div>
         ) : documents.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            <span className="text-4xl block mb-2">📄</span>
+            
             No documents found. Create your first document to get started.
           </div>
         ) : (

@@ -40,10 +40,10 @@ export default function DashboardPage() {
   }, [])
 
   const statCards = [
-    { label: 'Documents', value: stats.documents, icon: '📄' },
-    { label: 'Active Tasks', value: stats.tasks, icon: '✅' },
-    { label: 'Maintenance Requests', value: stats.maintenance, icon: '🔧' },
-    { label: 'Forms', value: stats.forms, icon: '📝' },
+    { label: 'Documents', value: stats.documents, color: 'bg-blue-50 text-blue-700' },
+    { label: 'Active Tasks', value: stats.tasks, color: 'bg-green-50 text-green-700' },
+    { label: 'Maintenance Requests', value: stats.maintenance, color: 'bg-amber-50 text-amber-700' },
+    { label: 'Forms', value: stats.forms, color: 'bg-purple-50 text-purple-700' },
   ]
 
   return (
@@ -59,7 +59,9 @@ export default function DashboardPage() {
                   {loading ? '...' : stat.value}
                 </p>
               </div>
-              <span className="text-3xl">{stat.icon}</span>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${stat.color}`}>
+                <span className="text-sm font-bold">{stat.value}</span>
+              </div>
             </div>
           </div>
         ))}
@@ -75,21 +77,18 @@ export default function DashboardPage() {
               href={`/dashboard/department/${key.toLowerCase()}`}
               className="card hover:shadow-md hover:border-primary-200 transition-all group"
             >
-              <div className="flex items-start space-x-3">
-                <span className="text-2xl">{dept.icon}</span>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-800 group-hover:text-primary-700 transition-colors">
-                    {dept.name}
-                  </h4>
-                  <p className="text-sm text-gray-500 mt-1">{dept.description}</p>
-                  <div className="flex flex-wrap gap-1 mt-3">
-                    {dept.modules.slice(0, 3).map((mod) => (
-                      <span key={mod} className="badge bg-gray-100 text-gray-600">{mod}</span>
-                    ))}
-                    {dept.modules.length > 3 && (
-                      <span className="badge bg-primary-50 text-primary-700">+{dept.modules.length - 3} more</span>
-                    )}
-                  </div>
+              <div>
+                <h4 className="font-semibold text-gray-800 group-hover:text-primary-700 transition-colors">
+                  {dept.name}
+                </h4>
+                <p className="text-sm text-gray-500 mt-1">{dept.description}</p>
+                <div className="flex flex-wrap gap-1 mt-3">
+                  {dept.modules.slice(0, 3).map((mod) => (
+                    <span key={mod} className="badge bg-gray-100 text-gray-600">{mod}</span>
+                  ))}
+                  {dept.modules.length > 3 && (
+                    <span className="badge bg-primary-50 text-primary-700">+{dept.modules.length - 3} more</span>
+                  )}
                 </div>
               </div>
             </Link>

@@ -16,7 +16,7 @@ export default function PatientsPage() {
       </div>
 
       <div className="text-center py-12 text-gray-500">
-        <span className="text-4xl block mb-2">👶</span>
+        
         <p>No patient records yet.</p>
         <p className="text-sm mt-1">Patient records will appear here once added.</p>
       </div>

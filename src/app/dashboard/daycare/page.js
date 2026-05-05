@@ -72,7 +72,7 @@ export default function DayCarePage() {
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <span className="text-lg">👶</span>
+              <svg className="w-5 h-5 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0" /></svg>
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-800">
@@ -85,7 +85,7 @@ export default function DayCarePage() {
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <span className="text-lg">📋</span>
+              <svg className="w-5 h-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25" /></svg>
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-800">
@@ -98,7 +98,7 @@ export default function DayCarePage() {
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-              <span className="text-lg">✅</span>
+              <svg className="w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-800">
@@ -254,8 +254,7 @@ export default function DayCarePage() {
         </div>
       ) : (
         <div className="text-center py-12 text-gray-500">
-          <span className="text-4xl block mb-2">🧒</span>
-          <p>No day care records for today.</p>
+          <p className="font-medium">No day care records for today.</p>
           <p className="text-sm mt-1">Check in children using the button above.</p>
         </div>
       )}

@@ -7,31 +7,32 @@ import { signOut, useSession } from 'next-auth/react'
 import { departments } from '@/lib/departments'
 
 const navItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: '📊' },
-  { name: 'Documents', href: '/dashboard/documents', icon: '📄' },
-  { name: 'Tasks', href: '/dashboard/tasks', icon: '✅' },
-  { name: 'Forms', href: '/dashboard/forms', icon: '📝' },
-  { name: 'Messages', href: '/dashboard/messages', icon: '💬' },
-  { name: 'Reports', href: '/dashboard/reports', icon: '📈' },
+  { name: 'Dashboard', href: '/dashboard' },
+  { name: 'Documents', href: '/dashboard/documents' },
+  { name: 'Tasks', href: '/dashboard/tasks' },
+  { name: 'Forms', href: '/dashboard/forms' },
+  { name: 'Messages', href: '/dashboard/messages' },
+  { name: 'Reports', href: '/dashboard/reports' },
 ]
 
 const deptNavItems = {
   PATIENT_CARE: [
-    { name: 'Patients', href: '/dashboard/patients', icon: '👶' },
-    { name: 'Admissions', href: '/dashboard/admissions', icon: '🛏️' },
-    { name: 'Day Care', href: '/dashboard/daycare', icon: '🧒' },
+    { name: 'Patients', href: '/dashboard/patients' },
+    { name: 'Admissions', href: '/dashboard/admissions' },
+    { name: 'Day Care', href: '/dashboard/daycare' },
+    { name: 'Baby Clinic', href: '/dashboard/baby-clinic' },
   ],
   BILLING: [
-    { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾' },
+    { name: 'Invoices', href: '/dashboard/invoices' },
   ],
   KITCHEN: [
-    { name: 'Meal Plans', href: '/dashboard/meals', icon: '🍽️' },
+    { name: 'Meal Plans', href: '/dashboard/meals' },
   ],
   SAFETY_MAINTENANCE: [
-    { name: 'Maintenance', href: '/dashboard/maintenance', icon: '🔧' },
+    { name: 'Maintenance', href: '/dashboard/maintenance' },
   ],
   IT: [
-    { name: 'Inventory', href: '/dashboard/inventory', icon: '💾' },
+    { name: 'Inventory', href: '/dashboard/inventory' },
   ],
 }
 
@@ -60,11 +61,14 @@ export default function Sidebar() {
               </div>
             </div>
           )}
+          {collapsed && (
+            <Image src="/logo.png" alt="GSCH" width={28} height={28} className="rounded mx-auto" />
+          )}
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
           >
-            {collapsed ? '→' : '←'}
+            {collapsed ? '\u203A' : '\u2039'}
           </button>
         </div>
       </div>
@@ -77,14 +81,13 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
+              className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${
                 isActive
                   ? 'bg-primary-50 text-primary-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
-              <span className="text-lg">{item.icon}</span>
-              {!collapsed && <span className="text-sm">{item.name}</span>}
+              <span className="text-sm">{item.name}</span>
             </Link>
           )
         })}
@@ -104,14 +107,13 @@ export default function Sidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
+                  className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${
                     isActive
                       ? 'bg-primary-50 text-primary-700 font-medium'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
-                  <span className="text-lg">{item.icon}</span>
-                  {!collapsed && <span className="text-sm">{item.name}</span>}
+                  <span className="text-sm">{item.name}</span>
                 </Link>
               )
             })}
@@ -129,14 +131,13 @@ export default function Sidebar() {
             </div>
             <Link
               href="/dashboard/users"
-              className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
+              className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${
                 pathname === '/dashboard/users'
                   ? 'bg-primary-50 text-primary-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
-              <span className="text-lg">👤</span>
-              {!collapsed && <span className="text-sm">User Management</span>}
+              <span className="text-sm">User Management</span>
             </Link>
           </>
         )}
@@ -161,10 +162,9 @@ export default function Sidebar() {
         </div>
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
-          className={`w-full flex items-center ${collapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-1`}
+          className={`w-full flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-1`}
         >
-          <span>🚪</span>
-          {!collapsed && <span>Sign Out</span>}
+          <span>Sign Out</span>
         </button>
       </div>
     </aside>

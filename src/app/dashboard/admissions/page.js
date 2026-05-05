@@ -15,9 +15,8 @@ export default function AdmissionsPage() {
         </button>
       </div>
 
-      <div className="text-center py-12 text-gray-500">
-        <span className="text-4xl block mb-2">🛏️</span>
-        <p>No admissions recorded yet.</p>
+      <div className="text-center py-12 text-gray-500 bg-white rounded-xl border border-gray-200">
+        <p className="font-medium">No admissions recorded yet.</p>
         <p className="text-sm mt-1">Admission records will appear here.</p>
       </div>
     </div>

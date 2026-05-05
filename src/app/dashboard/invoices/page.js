@@ -16,7 +16,7 @@ export default function InvoicesPage() {
       </div>
 
       <div className="text-center py-12 text-gray-500">
-        <span className="text-4xl block mb-2">🧾</span>
+        
         <p>No invoices yet.</p>
         <p className="text-sm mt-1">Invoices will appear here once generated.</p>
       </div>

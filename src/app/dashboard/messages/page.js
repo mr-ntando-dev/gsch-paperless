@@ -39,7 +39,7 @@ export default function MessagesPage() {
         <div className="text-center py-8 text-gray-500">Loading messages...</div>
       ) : messages.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          <span className="text-4xl block mb-2">💬</span>
+          
           <p>No messages yet.</p>
           <p className="text-sm mt-1">Internal messaging will appear here.</p>
         </div>

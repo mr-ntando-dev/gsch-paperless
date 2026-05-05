@@ -12,7 +12,7 @@ export default function ReportsPage() {
       </div>
 
       <div className="text-center py-12 text-gray-500">
-        <span className="text-4xl block mb-2">📈</span>
+        
         <p>No reports generated yet.</p>
         <p className="text-sm mt-1">Reports will become available as data is entered into the system.</p>
       </div>

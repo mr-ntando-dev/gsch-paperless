@@ -16,7 +16,7 @@ export default function InventoryPage() {
       </div>
 
       <div className="text-center py-12 text-gray-500">
-        <span className="text-4xl block mb-2">💾</span>
+        
         <p>No IT assets recorded yet.</p>
         <p className="text-sm mt-1">Equipment and asset records will appear here.</p>
       </div>

@@ -104,7 +104,7 @@ export default function TasksPage() {
         <div className="text-center py-8 text-gray-500">Loading tasks...</div>
       ) : tasks.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          <span className="text-4xl block mb-2">✅</span>
+          
           No tasks yet. Create your first task to get started.
         </div>
       ) : view === 'board' ? (

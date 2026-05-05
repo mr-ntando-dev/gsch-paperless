@@ -2,7 +2,6 @@ export const departments = {
   CRD: {
     name: "Client Relations Department",
     shortName: "CRD",
-    icon: "👥",
     color: "blue",
     description: "Managing patient and family relationships, complaints, feedback",
     modules: ["Complaints", "Feedback Forms", "Patient Surveys", "Visitor Logs", "Communication Templates"]
@@ -10,15 +9,13 @@ export const departments = {
   PATIENT_CARE: {
     name: "Patient Care",
     shortName: "Patient Care",
-    icon: "🏥",
     color: "teal",
     description: "Clinical documentation, patient records, treatment plans",
-    modules: ["Patient Records", "Admissions", "Discharge Notes", "Treatment Plans", "Medication Logs", "Ward Rounds"]
+    modules: ["Patient Records", "Admissions", "Day Care", "Baby Clinic", "Discharge Notes", "Treatment Plans", "Medication Logs", "Ward Rounds"]
   },
   BILLING: {
     name: "Billing",
     shortName: "Billing",
-    icon: "💰",
     color: "green",
     description: "Patient invoicing, payment tracking, insurance claims",
     modules: ["Invoices", "Payment Records", "Insurance Claims", "Quotations", "Receipts"]
@@ -26,7 +23,6 @@ export const departments = {
   ACCOUNTS: {
     name: "Accounts",
     shortName: "Accounts",
-    icon: "📊",
     color: "purple",
     description: "Financial management, budgets, payroll, procurement",
     modules: ["Budgets", "Expense Reports", "Payroll", "Procurement", "Financial Reports", "Petty Cash"]
@@ -34,7 +30,6 @@ export const departments = {
   KITCHEN: {
     name: "Kitchen",
     shortName: "Kitchen",
-    icon: "🍽️",
     color: "orange",
     description: "Meal planning, dietary management, food inventory",
     modules: ["Meal Plans", "Dietary Requirements", "Food Inventory", "Menu Templates", "Special Diets", "Hygiene Checklists"]
@@ -42,7 +37,6 @@ export const departments = {
   SAFETY_MAINTENANCE: {
     name: "Safety & Maintenance",
     shortName: "Safety & Maint.",
-    icon: "🔧",
     color: "yellow",
     description: "Facility maintenance, safety audits, incident reports",
     modules: ["Maintenance Requests", "Safety Audits", "Incident Reports", "Equipment Logs", "Inspection Schedules"]
@@ -50,7 +44,6 @@ export const departments = {
   IT: {
     name: "Information Technology",
     shortName: "IT",
-    icon: "💻",
     color: "indigo",
     description: "IT support, system management, asset tracking",
     modules: ["Support Tickets", "Asset Register", "Change Requests", "System Logs", "User Management"]
@@ -58,7 +51,6 @@ export const departments = {
   MANAGEMENT: {
     name: "Management",
     shortName: "Management",
-    icon: "📋",
     color: "red",
     description: "Strategic planning, policies, board reports, HR",
     modules: ["Policies", "Meeting Minutes", "Strategic Plans", "HR Documents", "Performance Reviews", "Board Reports"]
@@ -66,7 +58,6 @@ export const departments = {
   HOSPITAL_RELATIONS: {
     name: "Hospital Relations",
     shortName: "Hospital Relations",
-    icon: "🤝",
     color: "pink",
     description: "External partnerships, referrals, community engagement",
     modules: ["Referral Letters", "Partnership Agreements", "Community Programs", "Event Planning", "Donor Relations"]

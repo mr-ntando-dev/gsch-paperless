@@ -16,7 +16,7 @@ export default function MealsPage() {
       </div>
 
       <div className="text-center py-12 text-gray-500">
-        <span className="text-4xl block mb-2">🍽️</span>
+        
         <p>No meal plans created yet.</p>
         <p className="text-sm mt-1">Meal plans and dietary schedules will appear here.</p>
       </div>

@@ -97,7 +97,7 @@ export default function UsersPage() {
           <div className="p-8 text-center text-gray-500">Loading users...</div>
         ) : users.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            <span className="text-4xl block mb-2">👤</span>
+            
             No users found.
           </div>
         ) : (

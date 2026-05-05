@@ -70,7 +70,7 @@ export default function FormsPage() {
         <div className="text-center py-8 text-gray-500">Loading forms...</div>
       ) : forms.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          <span className="text-4xl block mb-2">📝</span>
+          
           No forms created yet. Create your first digital form.
         </div>
       ) : (
