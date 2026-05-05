@@ -102,8 +102,8 @@ model Task {
   priority    Priority    @default(MEDIUM)
   status      String      @default("TODO")
   dueDate     DateTime?
-  assigneeId  String
-  assignee    User        @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  assigneeId  String?
+  assignee    User?       @relation("AssignedTasks", fields: [assigneeId], references: [id])
   creatorId   String
   creator     User        @relation("CreatedTasks", fields: [creatorId], references: [id])
   createdAt   DateTime    @default(now())
@@ -225,7 +225,7 @@ model Inventory {
 model MaintenanceRequest {
   id          String      @id @default(cuid())
   title       String
-  description String      @db.Text
+  description String?     @db.Text
   location    String
   priority    Priority    @default(MEDIUM)
   status      String      @default("OPEN")

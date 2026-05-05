@@ -18,7 +18,10 @@ export async function GET(request) {
     if (department) where.department = department
 
     if (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER') {
-      where.assigneeId = session.user.id
+      where.OR = [
+        { assigneeId: session.user.id },
+        { creatorId: session.user.id },
+      ]
     }
 
     const tasks = await prisma.task.findMany({
@@ -52,7 +55,7 @@ export async function POST(request) {
         description,
         department: department || session.user.department,
         priority: priority || 'MEDIUM',
-        assigneeId,
+        assigneeId: assigneeId || session.user.id,
         creatorId: session.user.id,
         dueDate: dueDate ? new Date(dueDate) : null,
       },

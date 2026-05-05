@@ -6,7 +6,7 @@ const prisma = new PrismaClient()
 async function main() {
   const hashedPassword = await bcrypt.hash('admin123', 12)
 
-  // Create admin user
+  // Create admin user only - department users will register themselves
   await prisma.user.upsert({
     where: { email: 'admin@gsch.co.zw' },
     update: {},
@@ -19,30 +19,7 @@ async function main() {
     },
   })
 
-  // Create department users
-  const deptUsers = [
-    { email: 'dr.moyo@gsch.co.zw', name: 'Dr. T. Moyo', role: 'MANAGER', department: 'PATIENT_CARE' },
-    { email: 't.chirwa@gsch.co.zw', name: 'T. Chirwa', role: 'STAFF', department: 'ACCOUNTS' },
-    { email: 's.ndlovu@gsch.co.zw', name: 'S. Ndlovu', role: 'STAFF', department: 'KITCHEN' },
-    { email: 'k.zimba@gsch.co.zw', name: 'K. Zimba', role: 'MANAGER', department: 'IT' },
-    { email: 'p.mhlanga@gsch.co.zw', name: 'P. Mhlanga', role: 'STAFF', department: 'SAFETY_MAINTENANCE' },
-    { email: 'l.ncube@gsch.co.zw', name: 'L. Ncube', role: 'STAFF', department: 'CRD' },
-    { email: 'd.sibanda@gsch.co.zw', name: 'D. Sibanda', role: 'STAFF', department: 'HOSPITAL_RELATIONS' },
-    { email: 'm.chikwanha@gsch.co.zw', name: 'M. Chikwanha', role: 'STAFF', department: 'BILLING' },
-  ]
-
-  for (const user of deptUsers) {
-    await prisma.user.upsert({
-      where: { email: user.email },
-      update: {},
-      create: {
-        ...user,
-        password: hashedPassword,
-      },
-    })
-  }
-
-  console.log('Database seeded successfully!')
+  console.log('Database seeded successfully! Admin account created.')
 }
 
 main()

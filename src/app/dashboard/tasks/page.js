@@ -1,16 +1,7 @@
 'use client'
-import { useState } from 'react'
-
-const mockTasks = [
-  { id: 1, title: 'Complete monthly safety audit', department: 'SAFETY_MAINTENANCE', status: 'IN_PROGRESS', priority: 'HIGH', assignee: 'P. Mhlanga', dueDate: '2024-03-20' },
-  { id: 2, title: 'Update patient records system', department: 'IT', status: 'TODO', priority: 'MEDIUM', assignee: 'K. Zimba', dueDate: '2024-03-22' },
-  { id: 3, title: 'Prepare Q1 financial report', department: 'ACCOUNTS', status: 'IN_PROGRESS', priority: 'HIGH', assignee: 'T. Chirwa', dueDate: '2024-03-18' },
-  { id: 4, title: 'Review meal plans for April', department: 'KITCHEN', status: 'TODO', priority: 'MEDIUM', assignee: 'S. Ndlovu', dueDate: '2024-03-25' },
-  { id: 5, title: 'Process outstanding invoices', department: 'BILLING', status: 'TODO', priority: 'URGENT', assignee: 'M. Chikwanha', dueDate: '2024-03-16' },
-  { id: 6, title: 'Organize community health fair', department: 'HOSPITAL_RELATIONS', status: 'IN_PROGRESS', priority: 'MEDIUM', assignee: 'D. Sibanda', dueDate: '2024-03-30' },
-  { id: 7, title: 'Update visitor management policy', department: 'CRD', status: 'DONE', priority: 'LOW', assignee: 'L. Ncube', dueDate: '2024-03-14' },
-  { id: 8, title: 'Board meeting preparation', department: 'MANAGEMENT', status: 'IN_PROGRESS', priority: 'HIGH', assignee: 'Admin', dueDate: '2024-03-19' },
-]
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import toast from 'react-hot-toast'
 
 const statusColumns = ['TODO', 'IN_PROGRESS', 'DONE']
 
@@ -21,28 +12,83 @@ const priorityColors = {
   URGENT: 'border-l-red-500',
 }
 
+const statusLabels = {
+  TODO: 'To Do',
+  IN_PROGRESS: 'In Progress',
+  DONE: 'Done',
+}
+
 export default function TasksPage() {
   const [view, setView] = useState('board')
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
+  const [newTask, setNewTask] = useState({ title: '', description: '', priority: 'MEDIUM' })
+  const [submitting, setSubmitting] = useState(false)
+  const { data: session } = useSession()
+
+  const fetchTasks = async () => {
+    try {
+      const res = await fetch('/api/tasks')
+      if (res.ok) {
+        const data = await res.json()
+        setTasks(data)
+      }
+    } catch (error) {
+      toast.error('Failed to load tasks')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchTasks()
+  }, [])
+
+  const handleCreate = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTask),
+      })
+      if (res.ok) {
+        toast.success('Task created successfully')
+        setShowCreate(false)
+        setNewTask({ title: '', description: '', priority: 'MEDIUM' })
+        fetchTasks()
+      } else {
+        toast.error('Failed to create task')
+      }
+    } catch (error) {
+      toast.error('Something went wrong')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const getTasksByStatus = (status) => tasks.filter(t => t.status === status)
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Tasks</h1>
-          <p className="text-sm text-gray-500 mt-1">Track and manage department tasks</p>
+          <p className="text-sm text-gray-500 mt-1">Track and manage work across departments</p>
         </div>
         <div className="flex items-center space-x-3">
           <div className="flex bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setView('board')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium ${view === 'board' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}`}
+              className={`px-3 py-1.5 rounded text-sm font-medium ${view === 'board' ? 'bg-white shadow text-primary-700' : 'text-gray-600'}`}
             >
               Board
             </button>
             <button
               onClick={() => setView('list')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium ${view === 'list' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500'}`}
+              className={`px-3 py-1.5 rounded text-sm font-medium ${view === 'list' ? 'bg-white shadow text-primary-700' : 'text-gray-600'}`}
             >
               List
             </button>
@@ -54,70 +100,73 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* Board View */}
-      {view === 'board' && (
+      {loading ? (
+        <div className="text-center py-8 text-gray-500">Loading tasks...</div>
+      ) : tasks.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">
+          <span className="text-4xl block mb-2">✅</span>
+          No tasks yet. Create your first task to get started.
+        </div>
+      ) : view === 'board' ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {statusColumns.map((status) => (
             <div key={status} className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-700 text-sm uppercase">
-                  {status.replace('_', ' ')}
-                </h3>
-                <span className="badge bg-gray-100 text-gray-600">
-                  {mockTasks.filter(t => t.status === status).length}
-                </span>
+                <h3 className="font-semibold text-gray-700">{statusLabels[status]}</h3>
+                <span className="badge bg-gray-100 text-gray-600">{getTasksByStatus(status).length}</span>
               </div>
-              <div className="space-y-3">
-                {mockTasks.filter(t => t.status === status).map((task) => (
-                  <div key={task.id} className={`card border-l-4 ${priorityColors[task.priority]} cursor-pointer hover:shadow-md transition-shadow`}>
-                    <h4 className="font-medium text-gray-800 text-sm">{task.title}</h4>
-                    <p className="text-xs text-gray-500 mt-1">{task.department.replace('_', ' ')}</p>
+              <div className="space-y-2">
+                {getTasksByStatus(status).map((task) => (
+                  <div key={task.id} className={`card border-l-4 ${priorityColors[task.priority]}`}>
+                    <h4 className="text-sm font-medium text-gray-800">{task.title}</h4>
+                    {task.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{task.description}</p>}
                     <div className="flex items-center justify-between mt-3">
-                      <span className="text-xs text-gray-400">Due: {task.dueDate}</span>
-                      <div className="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center">
-                        <span className="text-xs font-medium text-primary-700">{task.assignee.charAt(0)}</span>
-                      </div>
+                      <span className="text-xs text-gray-400">{task.assignee?.name || 'Unassigned'}</span>
+                      {task.dueDate && (
+                        <span className="text-xs text-gray-400">{new Date(task.dueDate).toLocaleDateString()}</span>
+                      )}
                     </div>
                   </div>
                 ))}
+                {getTasksByStatus(status).length === 0 && (
+                  <div className="text-center py-4 text-xs text-gray-400 border-2 border-dashed border-gray-200 rounded-lg">
+                    No tasks
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </div>
-      )}
-
-      {/* List View */}
-      {view === 'list' && (
+      ) : (
         <div className="card overflow-hidden p-0">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Task</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Assignee</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Priority</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Assignee</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Due Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {mockTasks.map((task) => (
+              {tasks.map((task) => (
                 <tr key={task.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <p className="text-sm font-medium text-gray-800">{task.title}</p>
-                    <p className="text-xs text-gray-500">{task.department.replace('_', ' ')}</p>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{task.assignee}</td>
-                  <td className="px-6 py-4">
-                    <span className={`badge ${task.status === 'DONE' ? 'bg-green-100 text-green-700' : task.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
-                      {task.status.replace('_', ' ')}
-                    </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`badge ${task.priority === 'URGENT' ? 'bg-red-100 text-red-700' : task.priority === 'HIGH' ? 'bg-orange-100 text-orange-700' : task.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}>
+                    <span className="badge bg-gray-100 text-gray-700">{statusLabels[task.status] || task.status}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`badge ${task.priority === 'URGENT' ? 'bg-red-100 text-red-700' : task.priority === 'HIGH' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'}`}>
                       {task.priority}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{task.dueDate}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{task.assignee?.name || 'Unassigned'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '-'}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -125,56 +174,52 @@ export default function TasksPage() {
         </div>
       )}
 
-      {/* Create Task Modal */}
+      {/* Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Create New Task</h2>
-            <form className="space-y-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Create New Task</h3>
+            <form onSubmit={handleCreate} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input type="text" className="input-field" placeholder="Task title" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                  <select className="input-field">
-                    <option>Patient Care</option>
-                    <option>Billing</option>
-                    <option>Accounts</option>
-                    <option>Kitchen</option>
-                    <option>Safety & Maintenance</option>
-                    <option>IT</option>
-                    <option>Management</option>
-                    <option>Hospital Relations</option>
-                    <option>CRD</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                  <select className="input-field">
-                    <option>Low</option>
-                    <option>Medium</option>
-                    <option>High</option>
-                    <option>Urgent</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
-                <input type="text" className="input-field" placeholder="Staff member name" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                <input type="date" className="input-field" />
+                <input
+                  type="text"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  className="input-field"
+                  placeholder="Task title"
+                  required
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea className="input-field h-24" placeholder="Task description..."></textarea>
+                <textarea
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                  className="input-field min-h-[80px]"
+                  placeholder="Task description (optional)"
+                />
               </div>
-              <div className="flex space-x-3 pt-2">
-                <button type="button" className="btn-primary flex-1">Create Task</button>
-                <button type="button" className="btn-secondary flex-1" onClick={() => setShowCreate(false)}>Cancel</button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <select
+                  value={newTask.priority}
+                  onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                  className="input-field"
+                >
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="URGENT">Urgent</option>
+                </select>
+              </div>
+              <div className="flex justify-end space-x-3 pt-2">
+                <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 text-gray-600 hover:text-gray-800">
+                  Cancel
+                </button>
+                <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-50">
+                  {submitting ? 'Creating...' : 'Create Task'}
+                </button>
               </div>
             </form>
           </div>

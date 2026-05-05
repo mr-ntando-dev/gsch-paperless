@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -84,9 +85,13 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 p-4 bg-primary-50 rounded-lg">
-            <p className="text-sm text-primary-800 font-medium">Demo Credentials:</p>
-            <p className="text-xs text-primary-600 mt-1">admin@gsch.co.zw / admin123</p>
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Don&apos;t have an account?{' '}
+              <Link href="/register" className="text-primary-600 hover:text-primary-800 font-medium">
+                Create Account
+              </Link>
+            </p>
           </div>
         </div>
 
