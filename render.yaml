@@ -1,11 +1,9 @@
 services:
   - type: web
     name: gsch-paperless
-    runtime: node
+    runtime: docker
     plan: free
     region: oregon
-    buildCommand: npm install && npx prisma generate && npx prisma db push && npm run build
-    startCommand: npm run start
     envVars:
       - key: DATABASE_URL
         fromDatabase:
