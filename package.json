@@ -1,7 +1,7 @@
 {
-  "name": "gsch-paperless",
-  "version": "1.0.0",
-  "description": "Gweru Specialist Children's Hospital - Paperless Management System",
+  "name": "medifile",
+  "version": "2.0.0",
+  "description": "MediFile - Digital Document Management System for Gweru Specialist Children's Hospital",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

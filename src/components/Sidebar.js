@@ -53,8 +53,8 @@ export default function Sidebar() {
             <div className="flex items-center space-x-2">
               <span className="text-2xl">🏥</span>
               <div>
-                <h1 className="font-bold text-primary-700 text-sm">GSCH</h1>
-                <p className="text-[10px] text-gray-500">Paperless System</p>
+                <h1 className="font-bold text-primary-700 text-sm">MediFile</h1>
+                <p className="text-[10px] text-gray-500">Document Management</p>
               </div>
             </div>
           )}

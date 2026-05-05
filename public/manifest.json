@@ -1,1 +1,9 @@
-{}
+{
+  "name": "MediFile - Gweru Specialist Children's Hospital",
+  "short_name": "MediFile",
+  "description": "Digital Document Management System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#003333",
+  "theme_color": "#009999"
+}

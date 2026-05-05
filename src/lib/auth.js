@@ -69,7 +69,7 @@ export const authOptions = {
   pages: {
     signIn: "/login",
   },
-  secret: process.env.NEXTAUTH_SECRET || "gsch-paperless-fallback-secret-change-in-production",
+  secret: process.env.NEXTAUTH_SECRET || "medifile-gsch-secret-change-in-production",
 }
 
 export const getSession = () => getServerSession(authOptions)

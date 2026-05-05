@@ -43,9 +43,9 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-full mb-4 shadow-lg">
             <span className="text-4xl">🏥</span>
           </div>
-          <h1 className="text-3xl font-bold text-white">GSCH Paperless</h1>
+          <h1 className="text-3xl font-bold text-white">MediFile</h1>
           <p className="text-primary-200 mt-2">Gweru Specialist Children&apos;s Hospital</p>
-          <p className="text-primary-300 text-sm mt-1">Digital Document Management System</p>
+          <p className="text-primary-300 text-sm mt-1">Digital Document Management</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">
