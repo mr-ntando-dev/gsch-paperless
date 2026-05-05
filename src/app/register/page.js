@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { departmentList } from '@/lib/departments'
@@ -57,10 +58,10 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 px-4 py-8">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-full mb-4 shadow-lg">
-            <span className="text-4xl">🏥</span>
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-full mb-4 shadow-lg overflow-hidden">
+            <Image src="/logo.png" alt="GSCH Logo" width={72} height={72} />
           </div>
-          <h1 className="text-3xl font-bold text-white">MediFile</h1>
+          <h1 className="text-3xl font-bold text-white">GSCH Paperless</h1>
           <p className="text-primary-200 mt-2">Gweru Specialist Children&apos;s Hospital</p>
           <p className="text-primary-300 text-sm mt-1">Create Your Account</p>
           <p className="text-primary-300 text-xs mt-1">Digital Document Management</p>

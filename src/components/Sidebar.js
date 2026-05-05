@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
 import { departments } from '@/lib/departments'
@@ -18,6 +19,7 @@ const deptNavItems = {
   PATIENT_CARE: [
     { name: 'Patients', href: '/dashboard/patients', icon: '👶' },
     { name: 'Admissions', href: '/dashboard/admissions', icon: '🛏️' },
+    { name: 'Day Care', href: '/dashboard/daycare', icon: '🧒' },
   ],
   BILLING: [
     { name: 'Invoices', href: '/dashboard/invoices', icon: '🧾' },
@@ -51,10 +53,10 @@ export default function Sidebar() {
         <div className="flex items-center justify-between">
           {!collapsed && (
             <div className="flex items-center space-x-2">
-              <span className="text-2xl">🏥</span>
+              <Image src="/logo.png" alt="GSCH Logo" width={36} height={36} className="rounded" />
               <div>
-                <h1 className="font-bold text-primary-700 text-sm">MediFile</h1>
-                <p className="text-[10px] text-gray-500">Document Management</p>
+                <h1 className="font-bold text-primary-700 text-sm">GSCH</h1>
+                <p className="text-[10px] text-gray-500">Paperless System</p>
               </div>
             </div>
           )}
