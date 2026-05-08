@@ -8,7 +8,7 @@ export async function GET(request) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
-    const deptId = searchParams.get('departmentId') || session.user.departmentId
+    const deptId = searchParams.get('deptId') || searchParams.get('departmentId') || session.user.departmentId
 
     const where = {}
     if (!['SUPERADMIN','ADMIN'].includes(session.user.role)) {

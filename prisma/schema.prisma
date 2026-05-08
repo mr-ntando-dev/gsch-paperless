@@ -48,7 +48,11 @@ model DepartmentModel {
   forms       Form[]
   messages    Message[]
   deptItems   DeptItem[]
-  notices     DeptNotice[]
+  notices          DeptNotice[]
+  routedFromDocs   DocumentRoute[] @relation("RoutedFrom")
+  routedToDocs     DocumentRoute[] @relation("RoutedTo")
+  escalatedFromTasks TaskEscalation[] @relation("EscalatedFrom")
+  escalatedToTasks   TaskEscalation[] @relation("EscalatedTo")
 
   @@map("departments")
 }
@@ -75,9 +79,11 @@ model User {
   notifications Notification[]
   messages      Message[]
   comments      Comment[]
-  activityLogs  ActivityLog[]
-  deptItems     DeptItem[]
-  deptNotices   DeptNotice[]
+  activityLogs    ActivityLog[]
+  deptItems       DeptItem[]
+  deptNotices     DeptNotice[]
+  sentRoutes      DocumentRoute[]  @relation("SentRoutes")
+  escalations     TaskEscalation[] @relation("EscalatedByUser")
 }
 
 model Document {
@@ -96,6 +102,7 @@ model Document {
   author       User             @relation("AuthoredDocuments", fields: [authorId], references: [id])
   approvals    Approval[]
   comments     Comment[]
+  routes       DocumentRoute[]
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 }
@@ -127,6 +134,7 @@ model Task {
   creator      User             @relation("CreatedTasks", fields: [creatorId], references: [id])
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
+  escalations  TaskEscalation[]
 }
 
 model Form {
@@ -266,4 +274,44 @@ model ActivityLog {
   details    Json?
   ipAddress  String?
   createdAt  DateTime @default(now())
+}
+
+// Inter-department document routing
+model DocumentRoute {
+  id             String          @id @default(cuid())
+  documentId     String
+  document       Document        @relation(fields: [documentId], references: [id])
+  fromDeptId     String
+  fromDept       DepartmentModel @relation("RoutedFrom", fields: [fromDeptId], references: [id])
+  toDeptId       String
+  toDept         DepartmentModel @relation("RoutedTo", fields: [toDeptId], references: [id])
+  sentById       String
+  sentBy         User            @relation("SentRoutes", fields: [sentById], references: [id])
+  note           String?
+  status         String          @default("PENDING") // PENDING | ACKNOWLEDGED | ACTIONED | RETURNED
+  priority       Priority        @default(MEDIUM)
+  acknowledgedAt DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@map("document_routes")
+}
+
+// Inter-department task escalation
+model TaskEscalation {
+  id           String          @id @default(cuid())
+  taskId       String
+  task         Task            @relation(fields: [taskId], references: [id])
+  fromDeptId   String
+  fromDept     DepartmentModel @relation("EscalatedFrom", fields: [fromDeptId], references: [id])
+  toDeptId     String
+  toDept       DepartmentModel @relation("EscalatedTo", fields: [toDeptId], references: [id])
+  escalatedById String
+  escalatedBy  User            @relation("EscalatedByUser", fields: [escalatedById], references: [id])
+  reason       String
+  resolved     Boolean         @default(false)
+  resolvedAt   DateTime?
+  createdAt    DateTime        @default(now())
+
+  @@map("task_escalations")
 }
