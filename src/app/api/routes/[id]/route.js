@@ -19,7 +19,7 @@ export async function PATCH(request, { params }) {
       data: {
         status,
         ...(status === 'ACKNOWLEDGED' ? { acknowledgedAt: new Date() } : {}),
-        updatedAt: new Date(),
+        // updatedAt is handled automatically by @updatedAt in the schema
       }
     })
 

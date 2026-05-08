@@ -43,10 +43,14 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
+# Copy startup script
+COPY --from=builder /app/start.sh ./start.sh
+
 USER nextjs
 
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+# Run prisma db push to sync schema, then seed defaults, then start the app
+CMD ["sh", "start.sh"]

@@ -17,10 +17,11 @@ const colorGradient = {
 }
 
 const roleLabel = {
-  ADMIN:   { label: 'Administrator', badge: 'bg-red-100 text-red-700' },
-  MANAGER: { label: 'Manager',       badge: 'bg-yellow-100 text-yellow-700' },
-  STAFF:   { label: 'Staff Member',  badge: 'bg-blue-100 text-blue-700' },
-  VIEWER:  { label: 'Viewer',        badge: 'bg-gray-100 text-gray-600' },
+  SUPERADMIN: { label: 'System Administrator', badge: 'bg-red-100 text-red-700' },
+  ADMIN:      { label: 'Administrator',         badge: 'bg-orange-100 text-orange-700' },
+  MANAGER:    { label: 'Manager',               badge: 'bg-yellow-100 text-yellow-700' },
+  STAFF:      { label: 'Staff Member',          badge: 'bg-blue-100 text-blue-700' },
+  VIEWER:     { label: 'Viewer',                badge: 'bg-gray-100 text-gray-600' },
 }
 
 export default function WelcomeModal() {

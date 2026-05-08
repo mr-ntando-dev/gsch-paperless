@@ -12,13 +12,15 @@ export async function GET(request) {
     const deptId = session.user.departmentId
 
     let where = {}
-    if (direction === 'incoming') where = { toDeptId: deptId }
-    else if (direction === 'outgoing') where = { fromDeptId: deptId }
-    else where = { OR: [{ fromDeptId: deptId }, { toDeptId: deptId }] }
-
-    // ADMIN/SUPERADMIN see all
     if (['ADMIN', 'SUPERADMIN'].includes(session.user.role)) {
-      where = {}
+      // Admins see all, but still respect direction filter if provided
+      if (direction === 'incoming') where = { toDeptId: deptId }
+      else if (direction === 'outgoing') where = { fromDeptId: deptId }
+      // else where = {} — see everything
+    } else {
+      if (direction === 'incoming') where = { toDeptId: deptId }
+      else if (direction === 'outgoing') where = { fromDeptId: deptId }
+      else where = { OR: [{ fromDeptId: deptId }, { toDeptId: deptId }] }
     }
 
     const routes = await prisma.documentRoute.findMany({
