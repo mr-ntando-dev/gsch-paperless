@@ -64,6 +64,7 @@ model User {
   avatar         String?
   isActive       Boolean          @default(true)
   createdByAdmin Boolean          @default(false)
+  firstLogin     Boolean          @default(true)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 

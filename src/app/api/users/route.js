@@ -22,6 +22,7 @@ export async function GET() {
         departmentId: true,
         department: { select: { id: true, name: true, code: true, color: true } },
         isActive: true,
+        firstLogin: true,
         createdAt: true,
         createdByAdmin: true,
       },

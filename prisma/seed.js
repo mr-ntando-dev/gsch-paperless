@@ -40,6 +40,7 @@ async function main() {
       departmentId: departments['MANAGEMENT'].id,
       isActive: true,
       createdByAdmin: true,
+      firstLogin: false,
     },
   })
 
@@ -56,6 +57,7 @@ async function main() {
       departmentId: departments['MANAGEMENT'].id,
       isActive: true,
       createdByAdmin: true,
+      firstLogin: false,
     },
   })
 
