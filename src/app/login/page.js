@@ -4,7 +4,6 @@ import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
-import Link from 'next/link'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -50,7 +49,7 @@ export default function LoginPage() {
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6">Sign In</h2>
-          
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
@@ -61,6 +60,7 @@ export default function LoginPage() {
                 className="input-field"
                 placeholder="your.name@gsch.co.zw"
                 required
+                autoComplete="email"
               />
             </div>
 
@@ -73,6 +73,7 @@ export default function LoginPage() {
                 className="input-field"
                 placeholder="Enter your password"
                 required
+                autoComplete="current-password"
               />
             </div>
 
@@ -86,17 +87,14 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don&apos;t have an account?{' '}
-              <Link href="/register" className="text-primary-600 hover:text-primary-800 font-medium">
-                Create Account
-              </Link>
+            <p className="text-sm text-gray-500">
+              Contact your administrator if you need access.
             </p>
           </div>
         </div>
 
         <p className="text-center text-primary-200 text-sm mt-6">
-          &copy; 2024 Gweru Specialist Children&apos;s Hospital
+          &copy; 2026 Gweru Specialist Children&apos;s Hospital
         </p>
       </div>
     </div>

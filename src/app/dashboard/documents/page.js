@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import toast from 'react-hot-toast'
-import { departments } from '@/lib/departments'
+
 
 const statusColors = {
   DRAFT: 'bg-gray-100 text-gray-700',
@@ -127,7 +127,7 @@ export default function DocumentsPage() {
                     <p className="text-xs text-gray-500">by {doc.author?.name || 'Unknown'}</p>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-gray-600">{departments[doc.department]?.shortName || doc.department}</span>
+                    <span className="text-sm text-gray-600">{doc.department?.name || '—'}</span>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`badge ${statusColors[doc.status]}`}>{doc.status}</span>

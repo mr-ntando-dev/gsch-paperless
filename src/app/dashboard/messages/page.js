@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import toast from 'react-hot-toast'
-import { departments } from '@/lib/departments'
+
 
 export default function MessagesPage() {
   const [messages, setMessages] = useState([])

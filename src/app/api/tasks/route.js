@@ -5,30 +5,23 @@ import { getSession } from '@/lib/auth'
 export async function GET(request) {
   try {
     const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status')
-    const department = searchParams.get('department')
+    const deptId = searchParams.get('departmentId')
 
     const where = {}
-    if (status) where.status = status
-    if (department) where.department = department
-
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER') {
-      where.OR = [
-        { assigneeId: session.user.id },
-        { creatorId: session.user.id },
-      ]
+    if (deptId) where.departmentId = deptId
+    if (!['SUPERADMIN','ADMIN','MANAGER'].includes(session.user.role)) {
+      where.departmentId = session.user.departmentId
     }
 
     const tasks = await prisma.task.findMany({
       where,
       include: {
-        assignee: { select: { name: true } },
         creator: { select: { name: true } },
+        assignee: { select: { name: true } },
+        department: { select: { name: true, code: true } }
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -42,22 +35,21 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    const { title, description, department, priority, assigneeId, dueDate } = body
+    const { title, description, departmentId, priority, status, dueDate, assigneeId } = body
 
     const task = await prisma.task.create({
       data: {
         title,
         description,
-        department: department || session.user.department,
+        departmentId: departmentId || session.user.departmentId,
         priority: priority || 'MEDIUM',
-        assigneeId: assigneeId || session.user.id,
-        creatorId: session.user.id,
+        status: status || 'TODO',
         dueDate: dueDate ? new Date(dueDate) : null,
+        assigneeId,
+        creatorId: session.user.id,
       },
     })
 

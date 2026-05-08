@@ -6,20 +6,22 @@ A modern, paperless document management system built for hospital operations. Ma
 
 ## Features
 
-- 🏥 **Department-Based Access** - 9 hospital departments with role-based permissions
-- 📄 **Document Management** - Create, track, and approve documents with priority levels
-- ✅ **Task Board** - Kanban-style task management with assignment and due dates
-- 📝 **Digital Forms** - Create and manage paperless forms for any department
-- 🔧 **Maintenance Tracking** - Submit and track facility maintenance requests
-- 💬 **Internal Messaging** - Department-based communication channels
-- 🔐 **Self-Registration** - Staff register with an organisation secret code
-- 📊 **Real-Time Dashboard** - Live stats from actual system data
+- 🏥 **Dynamic Departments** — Create, edit, and manage departments from the admin panel
+- 📄 **Document Management** — Create, track, and approve documents with priority levels
+- ✅ **Task Board** — Kanban-style task management with assignment and due dates
+- 📝 **Digital Forms** — Department-specific forms with submission tracking
+- 🔧 **Maintenance Tracking** — Submit and track facility maintenance requests
+- 💬 **Internal Messaging** — Department-based communication channels
+- 🔐 **Admin-Created Users** — No self-registration; admin creates all accounts
+- 📌 **Department Boards** — Each department posts their own notices, procedures, announcements
+- 👁 **Admin Panel** — Hidden superadmin panel for full system monitoring
+- 📊 **Real-Time Dashboard** — Live stats from actual system data
 
 ## Tech Stack
 
 - **Framework:** Next.js 14 (App Router)
 - **Database:** PostgreSQL with Prisma ORM
-- **Auth:** NextAuth.js with credentials provider
+- **Auth:** NextAuth.js (JWT)
 - **Styling:** Tailwind CSS
 - **Deployment:** Docker / Render
 
@@ -29,53 +31,38 @@ A modern, paperless document management system built for hospital operations. Ma
 2. Install dependencies: `npm install`
 3. Set up environment variables (see below)
 4. Push database schema: `npx prisma db push`
-5. Seed admin account: `npx prisma db seed`
+5. Seed admin accounts: `npx prisma db seed`
 6. Run development server: `npm run dev`
 
 ## Environment Variables
 
-```env
+```
 DATABASE_URL=postgresql://...
 NEXTAUTH_SECRET=your-secret-key
 NEXTAUTH_URL=http://localhost:3000
-REGISTRATION_SECRET=devntando2026
 ```
 
-## Default Admin Account
+## Default Accounts (after seeding)
 
-After seeding:
-- **Email:** admin@gsch.co.zw
-- **Password:** admin123
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@gsch.co.zw | admin2026 |
 
-## User Registration
+## User Management
 
-Staff members register at `/register` using the organisation secret code. Each person selects their department during registration.
+All user accounts are created by administrators only. There is no self-registration. Admins create accounts at `/dashboard/users` and share credentials directly with the staff member.
+
+## Department Management
+
+Departments are fully dynamic and managed from the admin panel. You can create, edit, activate, and deactivate departments without touching code.
 
 ## Deployment
 
 ### Render
 
 1. Connect your GitHub repo
-2. Set environment variables:
-   - `DATABASE_URL` - PostgreSQL connection string
-   - `NEXTAUTH_SECRET` - Random secret key
-   - `NEXTAUTH_URL` - Your Render app URL
-   - `REGISTRATION_SECRET` - Organisation code for registration
+2. Set environment variables: `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
 3. Deploy
-
-## Departments
-
-| Department | Description |
-|---|---|
-| Client Relations (CRD) | Patient/family relationships, complaints, feedback |
-| Patient Care | Clinical documentation, records, treatment plans |
-| Billing | Invoicing, payments, insurance claims |
-| Accounts | Financial management, budgets, payroll |
-| Kitchen | Meal planning, dietary management |
-| Safety & Maintenance | Facility maintenance, safety audits |
-| IT | System management, asset tracking |
-| Management | Strategic planning, policies, HR |
-| Hospital Relations | External partnerships, referrals |
 
 ---
 

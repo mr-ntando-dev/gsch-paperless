@@ -1,11 +1,9 @@
 import { getServerSession } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import prisma from "./prisma"
 import bcrypt from "bcryptjs"
 
 export const authOptions = {
-  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -19,7 +17,8 @@ export const authOptions = {
         }
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+          where: { email: credentials.email },
+          include: { department: true }
         })
 
         if (!user || !user.isActive) {
@@ -40,7 +39,8 @@ export const authOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
-          department: user.department,
+          departmentId: user.departmentId,
+          departmentCode: user.department?.code || null,
         }
       }
     })
@@ -52,7 +52,8 @@ export const authOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role
-        token.department = user.department
+        token.departmentId = user.departmentId
+        token.departmentCode = user.departmentCode
         token.id = user.id
       }
       return token
@@ -60,7 +61,8 @@ export const authOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.role = token.role
-        session.user.department = token.department
+        session.user.departmentId = token.departmentId
+        session.user.departmentCode = token.departmentCode
         session.user.id = token.id
       }
       return session
@@ -73,3 +75,7 @@ export const authOptions = {
 }
 
 export const getSession = () => getServerSession(authOptions)
+
+export const isSuperAdmin = (session) => session?.user?.role === 'SUPERADMIN'
+export const isAdmin = (session) => ['ADMIN', 'SUPERADMIN'].includes(session?.user?.role)
+export const isManager = (session) => ['ADMIN', 'SUPERADMIN', 'MANAGER'].includes(session?.user?.role)

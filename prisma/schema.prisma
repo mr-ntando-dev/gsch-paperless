@@ -9,22 +9,11 @@ datasource db {
 }
 
 enum Role {
+  SUPERADMIN
   ADMIN
   MANAGER
   STAFF
   VIEWER
-}
-
-enum Department {
-  CRD
-  PATIENT_CARE
-  BILLING
-  ACCOUNTS
-  KITCHEN
-  SAFETY_MAINTENANCE
-  IT
-  MANAGEMENT
-  HOSPITAL_RELATIONS
 }
 
 enum DocumentStatus {
@@ -42,44 +31,72 @@ enum Priority {
   URGENT
 }
 
-model User {
-  id            String      @id @default(cuid())
-  email         String      @unique
-  name          String
-  password      String
-  role          Role        @default(STAFF)
-  department    Department
-  avatar        String?
-  isActive      Boolean     @default(true)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+model DepartmentModel {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  shortName   String
+  color       String   @default("blue")
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  documents     Document[]  @relation("AuthoredDocuments")
+  users       User[]
+  documents   Document[]
+  tasks       Task[]
+  forms       Form[]
+  messages    Message[]
+  deptItems   DeptItem[]
+  notices     DeptNotice[]
+
+  @@map("departments")
+}
+
+model User {
+  id             String           @id @default(cuid())
+  email          String           @unique
+  name           String
+  password       String
+  role           Role             @default(STAFF)
+  departmentId   String?
+  department     DepartmentModel? @relation(fields: [departmentId], references: [id])
+  avatar         String?
+  isActive       Boolean          @default(true)
+  createdByAdmin Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  documents     Document[]     @relation("AuthoredDocuments")
   approvals     Approval[]
-  tasks         Task[]      @relation("AssignedTasks")
-  createdTasks  Task[]      @relation("CreatedTasks")
+  tasks         Task[]         @relation("AssignedTasks")
+  createdTasks  Task[]         @relation("CreatedTasks")
   notifications Notification[]
   messages      Message[]
   comments      Comment[]
+  activityLogs  ActivityLog[]
+  deptItems     DeptItem[]
+  deptNotices   DeptNotice[]
 }
 
 model Document {
-  id          String         @id @default(cuid())
-  title       String
-  content     String         @db.Text
-  type        String
-  department  Department
-  status      DocumentStatus @default(DRAFT)
-  priority    Priority       @default(MEDIUM)
-  tags        String[]
-  fileUrl     String?
-  version     Int            @default(1)
-  authorId    String
-  author      User           @relation("AuthoredDocuments", fields: [authorId], references: [id])
-  approvals   Approval[]
-  comments    Comment[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id           String           @id @default(cuid())
+  title        String
+  content      String           @db.Text
+  type         String
+  departmentId String?
+  department   DepartmentModel? @relation(fields: [departmentId], references: [id])
+  status       DocumentStatus   @default(DRAFT)
+  priority     Priority         @default(MEDIUM)
+  tags         String[]
+  fileUrl      String?
+  version      Int              @default(1)
+  authorId     String
+  author       User             @relation("AuthoredDocuments", fields: [authorId], references: [id])
+  approvals    Approval[]
+  comments     Comment[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 }
 
 model Approval {
@@ -95,41 +112,43 @@ model Approval {
 }
 
 model Task {
-  id          String      @id @default(cuid())
-  title       String
-  description String?     @db.Text
-  department  Department
-  priority    Priority    @default(MEDIUM)
-  status      String      @default("TODO")
-  dueDate     DateTime?
-  assigneeId  String?
-  assignee    User?       @relation("AssignedTasks", fields: [assigneeId], references: [id])
-  creatorId   String
-  creator     User        @relation("CreatedTasks", fields: [creatorId], references: [id])
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id           String           @id @default(cuid())
+  title        String
+  description  String?          @db.Text
+  departmentId String?
+  department   DepartmentModel? @relation(fields: [departmentId], references: [id])
+  priority     Priority         @default(MEDIUM)
+  status       String           @default("TODO")
+  dueDate      DateTime?
+  assigneeId   String?
+  assignee     User?            @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  creatorId    String
+  creator      User             @relation("CreatedTasks", fields: [creatorId], references: [id])
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 }
 
 model Form {
-  id          String      @id @default(cuid())
-  title       String
-  description String?
-  department  Department
-  fields      Json
-  isActive    Boolean     @default(true)
-  submissions FormSubmission[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id           String           @id @default(cuid())
+  title        String
+  description  String?
+  departmentId String?
+  department   DepartmentModel? @relation(fields: [departmentId], references: [id])
+  fields       Json
+  isActive     Boolean          @default(true)
+  submissions  FormSubmission[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 }
 
 model FormSubmission {
-  id        String   @id @default(cuid())
-  formId    String
-  form      Form     @relation(fields: [formId], references: [id])
-  data      Json
+  id          String   @id @default(cuid())
+  formId      String
+  form        Form     @relation(fields: [formId], references: [id])
+  data        Json
   submittedBy String
-  status    String   @default("SUBMITTED")
-  createdAt DateTime @default(now())
+  status      String   @default("SUBMITTED")
+  createdAt   DateTime @default(now())
 }
 
 model Notification {
@@ -145,28 +164,29 @@ model Notification {
 }
 
 model Message {
-  id          String      @id @default(cuid())
-  content     String      @db.Text
-  senderId    String
-  sender      User        @relation(fields: [senderId], references: [id])
-  department  Department
-  channel     String      @default("general")
-  createdAt   DateTime    @default(now())
+  id           String           @id @default(cuid())
+  content      String           @db.Text
+  senderId     String
+  sender       User             @relation(fields: [senderId], references: [id])
+  departmentId String?
+  department   DepartmentModel? @relation(fields: [departmentId], references: [id])
+  channel      String           @default("general")
+  createdAt    DateTime         @default(now())
 }
 
 model Comment {
-  id          String   @id @default(cuid())
-  content     String   @db.Text
-  documentId  String
-  document    Document @relation(fields: [documentId], references: [id])
-  authorId    String
-  author      User     @relation(fields: [authorId], references: [id])
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  content    String   @db.Text
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id])
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+  createdAt  DateTime @default(now())
 }
 
 model Patient {
-  id            String   @id @default(cuid())
-  patientId     String   @unique
+  id            String      @id @default(cuid())
+  patientId     String      @unique
   firstName     String
   lastName      String
   dateOfBirth   DateTime
@@ -175,77 +195,74 @@ model Patient {
   address       String?
   medicalHistory Json?
   admissions    Admission[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model Admission {
-  id          String   @id @default(cuid())
-  patientId   String
-  patient     Patient  @relation(fields: [patientId], references: [id])
-  ward        String
-  doctor      String
-  diagnosis   String?
-  admitDate   DateTime @default(now())
+  id            String    @id @default(cuid())
+  patientId     String
+  patient       Patient   @relation(fields: [patientId], references: [id])
+  ward          String
+  doctor        String
+  diagnosis     String?
+  admitDate     DateTime  @default(now())
   dischargeDate DateTime?
-  status      String   @default("ADMITTED")
+  status        String    @default("ADMITTED")
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model MaintenanceRequest {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  location    String
+  priority    Priority @default(MEDIUM)
+  status      String   @default("OPEN")
+  requestedBy String
+  assignedTo  String?
+  resolvedAt  DateTime?
   notes       String?  @db.Text
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
-model Invoice {
-  id          String   @id @default(cuid())
-  invoiceNo   String   @unique
-  patientName String
-  department  Department
-  items       Json
-  totalAmount Float
-  paidAmount  Float    @default(0)
-  status      String   @default("UNPAID")
-  dueDate     DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model DeptItem {
+  id           String          @id @default(cuid())
+  title        String
+  content      String          @db.Text
+  type         String
+  departmentId String
+  department   DepartmentModel @relation(fields: [departmentId], references: [id])
+  authorId     String
+  author       User            @relation(fields: [authorId], references: [id])
+  isPinned     Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 }
 
-model Inventory {
-  id          String      @id @default(cuid())
-  name        String
-  category    String
-  department  Department
-  quantity    Int
-  minStock    Int         @default(10)
-  unit        String
-  supplier    String?
-  lastOrdered DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+model DeptNotice {
+  id           String          @id @default(cuid())
+  title        String
+  body         String          @db.Text
+  departmentId String
+  department   DepartmentModel @relation(fields: [departmentId], references: [id])
+  authorId     String
+  author       User            @relation(fields: [authorId], references: [id])
+  expiresAt    DateTime?
+  createdAt    DateTime        @default(now())
 }
 
-model MaintenanceRequest {
-  id          String      @id @default(cuid())
-  title       String
-  description String?     @db.Text
-  location    String
-  priority    Priority    @default(MEDIUM)
-  status      String      @default("OPEN")
-  requestedBy String
-  assignedTo  String?
-  department  Department  @default(SAFETY_MAINTENANCE)
-  completedAt DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-}
-
-model MealPlan {
-  id          String   @id @default(cuid())
-  date        DateTime
-  mealType    String
-  ward        String
-  items       Json
-  dietaryNotes String?
-  preparedBy  String?
-  status      String   @default("PLANNED")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  action     String
+  resource   String
+  resourceId String?
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
 }

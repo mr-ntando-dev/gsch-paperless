@@ -1,24 +1,29 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
+import { getSession, isAdmin } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 
 export async function GET() {
   try {
     const session = await getSession()
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !isAdmin(session)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const where = session.user.role === 'SUPERADMIN' ? {} : { role: { not: 'SUPERADMIN' } }
+
     const users = await prisma.user.findMany({
+      where,
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
-        department: true,
+        departmentId: true,
+        department: { select: { id: true, name: true, code: true, color: true } },
         isActive: true,
         createdAt: true,
+        createdByAdmin: true,
       },
       orderBy: { name: 'asc' },
     })
@@ -32,12 +37,16 @@ export async function GET() {
 export async function POST(request) {
   try {
     const session = await getSession()
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !isAdmin(session)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
-    const { email, name, password, role, department } = body
+    const { email, name, password, role, departmentId } = body
+
+    if (!email || !name || !password || !departmentId) {
+      return NextResponse.json({ error: 'email, name, password and departmentId are required' }, { status: 400 })
+    }
 
     const hashedPassword = await bcrypt.hash(password, 12)
 
@@ -47,7 +56,8 @@ export async function POST(request) {
         name,
         password: hashedPassword,
         role: role || 'STAFF',
-        department,
+        departmentId,
+        createdByAdmin: true,
       },
     })
 

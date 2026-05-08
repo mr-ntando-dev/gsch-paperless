@@ -1,10 +1,9 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
-import { departments } from '@/lib/departments'
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard' },
@@ -15,48 +14,36 @@ const navItems = [
   { name: 'Reports', href: '/dashboard/reports' },
 ]
 
-const deptNavItems = {
-  PATIENT_CARE: [
-    { name: 'Patients', href: '/dashboard/patients' },
-    { name: 'Admissions', href: '/dashboard/admissions' },
-    { name: 'Day Care', href: '/dashboard/daycare' },
-    { name: 'Baby Clinic', href: '/dashboard/baby-clinic' },
-  ],
-  BILLING: [
-    { name: 'Invoices', href: '/dashboard/invoices' },
-  ],
-  KITCHEN: [
-    { name: 'Meal Plans', href: '/dashboard/meals' },
-  ],
-  SAFETY_MAINTENANCE: [
-    { name: 'Maintenance', href: '/dashboard/maintenance' },
-  ],
-  IT: [
-    { name: 'Inventory', href: '/dashboard/inventory' },
-  ],
-}
+const adminItems = [
+  { name: 'Users', href: '/dashboard/users' },
+]
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
+  const [departments, setDepartments] = useState([])
   const pathname = usePathname()
   const { data: session } = useSession()
-  const userDept = session?.user?.department
   const userRole = session?.user?.role
 
-  const extraItems = (userRole === 'ADMIN' || userRole === 'MANAGER')
-    ? Object.values(deptNavItems).flat()
-    : (deptNavItems[userDept] || [])
+  useEffect(() => {
+    fetch('/api/departments')
+      .then(r => r.json())
+      .then(d => setDepartments(Array.isArray(d) ? d.filter(x => x.isActive) : []))
+      .catch(() => {})
+  }, [])
+
+  const isActive = (href) => pathname === href
 
   return (
     <aside className={`${collapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 min-h-screen flex flex-col transition-all duration-300`}>
-      {/* Header */}
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between">
           {!collapsed && (
             <div className="flex items-center space-x-2">
               <Image src="/logo.png" alt="GSCH Logo" width={36} height={36} className="rounded" />
               <div>
-                <h1 className="font-bold text-primary-700 text-sm">GSCH</h1>
+                <h1 className="font-bold text-primary-700 text-sm">GSCH MediFile</h1>
+                <p className="text-gray-400 text-xs">© 2026</p>
               </div>
             </div>
           )}
@@ -67,103 +54,69 @@ export default function Sidebar() {
             onClick={() => setCollapsed(!collapsed)}
             className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
           >
-            {collapsed ? '\u203A' : '\u2039'}
+            {collapsed ? '›' : '‹'}
           </button>
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${
-                isActive
-                  ? 'bg-primary-50 text-primary-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-            >
-              <span className="text-sm">{item.name}</span>
-            </Link>
-          )
-        })}
+        {navItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`flex items-center px-3 py-2.5 rounded-lg transition-colors text-sm ${
+              isActive(item.href)
+                ? 'bg-primary-50 text-primary-700 font-medium'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+            }`}
+          >
+            {!collapsed && <span>{item.name}</span>}
+          </Link>
+        ))}
 
-        {extraItems.length > 0 && (
+        {['ADMIN', 'MANAGER'].includes(userRole) && (
           <>
-            <div className="pt-4 pb-2">
-              {!collapsed && (
-                <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Department
-                </p>
-              )}
-            </div>
-            {extraItems.map((item) => {
-              const isActive = pathname === item.href
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-primary-50 text-primary-700 font-medium'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <span className="text-sm">{item.name}</span>
-                </Link>
-              )
-            })}
+            {!collapsed && <p className="text-xs text-gray-400 uppercase tracking-wider px-3 pt-4 pb-1">Administration</p>}
+            {adminItems.map(item => (
+              <Link key={item.href} href={item.href}
+                className={`flex items-center px-3 py-2.5 rounded-lg transition-colors text-sm ${
+                  pathname.startsWith(item.href) ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                }`}>
+                {!collapsed && <span>{item.name}</span>}
+              </Link>
+            ))}
           </>
         )}
 
-        {(userRole === 'ADMIN') && (
+        {!collapsed && departments.length > 0 && (
           <>
-            <div className="pt-4 pb-2">
-              {!collapsed && (
-                <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Admin
-                </p>
-              )}
-            </div>
-            <Link
-              href="/dashboard/users"
-              className={`flex items-center px-3 py-2.5 rounded-lg transition-colors ${
-                pathname === '/dashboard/users'
-                  ? 'bg-primary-50 text-primary-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-            >
-              <span className="text-sm">User Management</span>
-            </Link>
+            <p className="text-xs text-gray-400 uppercase tracking-wider px-3 pt-4 pb-1">Departments</p>
+            {departments.map(dept => (
+              <Link key={dept.id} href={`/dashboard/department/${dept.code}`}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors text-sm ${
+                  pathname === `/dashboard/department/${dept.code}` ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                }`}>
+                <span className={`w-2 h-2 rounded-full bg-${dept.color}-400 flex-shrink-0`} />
+                <span className="truncate">{dept.shortName}</span>
+              </Link>
+            ))}
           </>
         )}
       </nav>
 
-      {/* User section */}
       <div className="p-3 border-t border-gray-100">
-        <div className={`flex items-center ${collapsed ? 'justify-center' : 'space-x-3'} px-3 py-2`}>
-          <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-            <span className="text-sm font-medium text-primary-700">
-              {session?.user?.name?.charAt(0) || 'U'}
-            </span>
+        {!collapsed && session?.user && (
+          <div className="px-3 py-2 mb-2">
+            <p className="text-sm font-medium text-gray-700 truncate">{session.user.name}</p>
+            <p className="text-xs text-gray-400 truncate">{session.user.email}</p>
           </div>
-          {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-700 truncate">{session?.user?.name}</p>
-              <p className="text-xs text-gray-500 truncate">
-                {departments[userDept]?.shortName || userDept}
-              </p>
-            </div>
-          )}
-        </div>
+        )}
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
-          className={`w-full flex items-center ${collapsed ? 'justify-center' : ''} px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-1`}
+          className={`w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start space-x-2'} px-3 py-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm`}
         >
-          <span>Sign Out</span>
+          <span>⏻</span>
+          {!collapsed && <span>Sign Out</span>}
         </button>
       </div>
     </aside>

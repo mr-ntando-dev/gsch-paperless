@@ -2,16 +2,26 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 
-export async function GET() {
+export async function GET(request) {
   try {
     const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { searchParams } = new URL(request.url)
+    const deptId = searchParams.get('departmentId')
+
+    const where = { isActive: true }
+    if (deptId) where.departmentId = deptId
+    else if (!['SUPERADMIN','ADMIN','MANAGER'].includes(session.user.role)) {
+      where.departmentId = session.user.departmentId
     }
 
     const forms = await prisma.form.findMany({
-      where: { isActive: true },
-      include: { _count: { select: { submissions: true } } },
+      where,
+      include: {
+        department: { select: { name: true, code: true } },
+        _count: { select: { submissions: true } }
+      },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -24,18 +34,16 @@ export async function GET() {
 export async function POST(request) {
   try {
     const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    const { title, description, department, fields } = body
+    const { title, description, departmentId, fields } = body
 
     const form = await prisma.form.create({
       data: {
         title,
         description,
-        department: department || session.user.department,
+        departmentId: departmentId || session.user.departmentId,
         fields: fields || [],
       },
     })
