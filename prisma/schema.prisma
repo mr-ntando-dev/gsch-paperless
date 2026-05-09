@@ -202,8 +202,17 @@ model Patient {
   guardianName  String
   guardianPhone String
   address       String?
+  gender        String      @default("UNKNOWN")
+  bloodType     String?
+  allergies     String?
   medicalHistory Json?
+  careType      String      @default("OUTPATIENT") // ADMITTED | OBSERVATION | DAYCARE | OUTPATIENT
+  isActive      Boolean     @default(true)
   admissions    Admission[]
+  observations  Observation[]
+  dayCareRecords DayCareRecord[]
+  kitchenRequests KitchenRequest[]
+  patientMessages PatientMessage[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 }
@@ -213,14 +222,81 @@ model Admission {
   patientId     String
   patient       Patient   @relation(fields: [patientId], references: [id])
   ward          String
+  bed           String?
   doctor        String
   diagnosis     String?
   admitDate     DateTime  @default(now())
   dischargeDate DateTime?
-  status        String    @default("ADMITTED")
+  status        String    @default("ADMITTED") // ADMITTED | DISCHARGED | TRANSFERRED
   notes         String?   @db.Text
+  dietaryNotes  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model Observation {
+  id              String    @id @default(cuid())
+  patientId       String
+  patient         Patient   @relation(fields: [patientId], references: [id])
+  reason          String
+  doctor          String
+  observationArea String    @default("General")
+  startDate       DateTime  @default(now())
+  endDate         DateTime?
+  status          String    @default("ACTIVE") // ACTIVE | COMPLETED | ESCALATED
+  vitals          Json?
+  notes           String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model DayCareRecord {
+  id            String    @id @default(cuid())
+  patientId     String?
+  patient       Patient?  @relation(fields: [patientId], references: [id])
+  childName     String
+  age           String
+  parentName    String
+  parentPhone   String
+  checkInTime   String
+  checkOutTime  String?
+  date          String
+  status        String    @default("CHECKED_IN") // CHECKED_IN | CHECKED_OUT | SCHEDULED
+  notes         String?
+  dietaryNeeds  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model KitchenRequest {
+  id          String    @id @default(cuid())
+  patientId   String
+  patient     Patient   @relation(fields: [patientId], references: [id])
+  requestType String    @default("MEAL") // MEAL | DIETARY | SPECIAL | ALLERGY_NOTE
+  mealTime    String    @default("LUNCH") // BREAKFAST | LUNCH | DINNER | SNACK
+  description String    @db.Text
+  dietaryNotes String?
+  status      String    @default("PENDING") // PENDING | ACKNOWLEDGED | PREPARING | DELIVERED | CANCELLED
+  priority    Priority  @default(MEDIUM)
+  requestedBy String
+  notes       String?
+  deliveredAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model PatientMessage {
+  id          String    @id @default(cuid())
+  patientId   String
+  patient     Patient   @relation(fields: [patientId], references: [id])
+  channel     String    @default("KITCHEN") // KITCHEN | NURSING | GENERAL
+  content     String    @db.Text
+  senderName  String
+  senderRole  String    @default("NURSE") // NURSE | DOCTOR | ADMIN | PATIENT_GUARDIAN
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  replyTo     String?
+  createdAt   DateTime  @default(now())
 }
 
 model MaintenanceRequest {

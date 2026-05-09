@@ -1,261 +1,138 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 
-const statusColors = {
-  CHECKED_IN: 'bg-green-100 text-green-800',
-  CHECKED_OUT: 'bg-gray-100 text-gray-800',
-  SCHEDULED: 'bg-blue-100 text-blue-800',
-}
+const sC = { CHECKED_IN: 'bg-green-100 text-green-700', CHECKED_OUT: 'bg-gray-100 text-gray-500', SCHEDULED: 'bg-blue-100 text-blue-700' }
+const EMPTY_F = { childName: '', age: '', parentName: '', parentPhone: '', notes: '', dietaryNeeds: '', status: 'CHECKED_IN' }
 
 export default function DayCarePage() {
-  const [children, setChildren] = useState([])
+  const [records, setRecords] = useState([])
+  const [patients, setPatients] = useState([])
+  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({
-    childName: '',
-    age: '',
-    parentName: '',
-    parentPhone: '',
-    checkInTime: '',
-    checkOutTime: '',
-    notes: '',
-    status: 'CHECKED_IN',
-  })
+  const [form, setForm] = useState(EMPTY_F)
+  const [saving, setSaving] = useState(false)
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    const newEntry = {
-      id: Date.now().toString(),
-      ...formData,
-      date: new Date().toLocaleDateString('en-ZW'),
-    }
-    setChildren([newEntry, ...children])
-    setFormData({
-      childName: '',
-      age: '',
-      parentName: '',
-      parentPhone: '',
-      checkInTime: '',
-      checkOutTime: '',
-      notes: '',
-      status: 'CHECKED_IN',
-    })
-    setShowForm(false)
+  const load = async () => {
+    setLoading(true)
+    try {
+      const today = new Date().toLocaleDateString('en-ZW')
+      const [rr, pr] = await Promise.all([fetch('/api/daycare?date='+today), fetch('/api/patients')])
+      if (rr.ok) setRecords(await rr.json())
+      if (pr.ok) setPatients(await pr.json())
+    } finally { setLoading(false) }
   }
 
-  const handleCheckOut = (id) => {
-    setChildren(children.map(child =>
-      child.id === id
-        ? { ...child, status: 'CHECKED_OUT', checkOutTime: new Date().toLocaleTimeString('en-ZW', { hour: '2-digit', minute: '2-digit' }) }
-        : child
-    ))
+  useEffect(() => { load() }, [])
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const r = await fetch('/api/daycare', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+      if (r.ok) { toast.success('Child checked in'); setForm(EMPTY_F); setShowForm(false); load() }
+      else { const d = await r.json(); toast.error(d.error || 'Failed to check in') }
+    } finally { setSaving(false) }
+  }
+
+  const handleCheckOut = async (id) => {
+    try {
+      const r = await fetch('/api/daycare', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status: 'CHECKED_OUT' }) })
+      if (r.ok) { toast.success('Child checked out'); load() }
+      else toast.error('Failed to check out')
+    } catch { toast.error('Network error') }
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Day Care</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage day care check-ins and scheduling</p>
+          <p className="text-sm text-gray-500 mt-0.5">Manage day care check-ins and scheduling</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="btn-primary flex items-center space-x-2"
-        >
-          <span>+</span>
-          <span>Check In Child</span>
+        <button onClick={() => setShowForm(!showForm)} className="btn-primary flex items-center gap-2 text-sm">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+          Check In Child
         </button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0" /></svg>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-800">
-                {children.filter(c => c.status === 'CHECKED_IN').length}
-              </p>
-              <p className="text-xs text-gray-500">Currently Checked In</p>
-            </div>
+        {[{s:'CHECKED_IN',l:'Currently Present',col:'bg-green-50 border-green-100'},{s:'SCHEDULED',l:'Scheduled',col:'bg-blue-50 border-blue-100'},{s:'CHECKED_OUT',l:'Checked Out',col:'bg-gray-50 border-gray-100'}].map(({s,l,col})=>(
+          <div key={s} className={'rounded-xl p-4 border '+col}>
+            <p className="text-2xl font-bold text-gray-800">{records.filter(r=>r.status===s).length}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{l}</p>
           </div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25" /></svg>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-800">
-                {children.filter(c => c.status === 'SCHEDULED').length}
-              </p>
-              <p className="text-xs text-gray-500">Scheduled Today</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-800">
-                {children.filter(c => c.status === 'CHECKED_OUT').length}
-              </p>
-              <p className="text-xs text-gray-500">Checked Out Today</p>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Check-in Form */}
-      {showForm && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Check In a Child</h2>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {showForm&&(
+        <div className="bg-white rounded-xl border border-gray-200 p-5 max-w-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-800 text-sm">Check In Child</h2>
+            <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+          <form onSubmit={handleSave} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-xs text-gray-500 font-medium">Child Name *</label><input required value={form.childName} onChange={e=>setForm({...form,childName:e.target.value})} className="input-field text-sm mt-1" /></div>
+              <div><label className="text-xs text-gray-500 font-medium">Age *</label><input required value={form.age} onChange={e=>setForm({...form,age:e.target.value})} placeholder="e.g. 3 years" className="input-field text-sm mt-1" /></div>
+            </div>
+            <div><label className="text-xs text-gray-500 font-medium">Parent/Guardian Name *</label><input required value={form.parentName} onChange={e=>setForm({...form,parentName:e.target.value})} className="input-field text-sm mt-1" /></div>
+            <div><label className="text-xs text-gray-500 font-medium">Parent Phone *</label><input required value={form.parentPhone} onChange={e=>setForm({...form,parentPhone:e.target.value})} className="input-field text-sm mt-1" /></div>
+            <div><label className="text-xs text-gray-500 font-medium">Dietary Needs</label><input value={form.dietaryNeeds} onChange={e=>setForm({...form,dietaryNeeds:e.target.value})} placeholder="e.g. no nuts, vegetarian" className="input-field text-sm mt-1" /></div>
+            <div><label className="text-xs text-gray-500 font-medium">Notes</label><textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} rows={2} className="input-field text-sm mt-1 resize-none" /></div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Child&apos;s Name</label>
-              <input
-                type="text"
-                value={formData.childName}
-                onChange={(e) => setFormData({ ...formData, childName: e.target.value })}
-                className="input-field"
-                placeholder="Full name"
-                required
-              />
+              <label className="text-xs text-gray-500 font-medium">Status</label>
+              <select value={form.status} onChange={e=>setForm({...form,status:e.target.value})} className="input-field text-sm mt-1">
+                <option value="CHECKED_IN">Check In Now</option><option value="SCHEDULED">Scheduled (future)</option>
+              </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Age</label>
-              <input
-                type="text"
-                value={formData.age}
-                onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                className="input-field"
-                placeholder="e.g. 3 years"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Parent/Guardian Name</label>
-              <input
-                type="text"
-                value={formData.parentName}
-                onChange={(e) => setFormData({ ...formData, parentName: e.target.value })}
-                className="input-field"
-                placeholder="Parent or guardian name"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
-              <input
-                type="tel"
-                value={formData.parentPhone}
-                onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })}
-                className="input-field"
-                placeholder="+263..."
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Check-in Time</label>
-              <input
-                type="time"
-                value={formData.checkInTime}
-                onChange={(e) => setFormData({ ...formData, checkInTime: e.target.value })}
-                className="input-field"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Expected Pick-up Time</label>
-              <input
-                type="time"
-                value={formData.checkOutTime}
-                onChange={(e) => setFormData({ ...formData, checkOutTime: e.target.value })}
-                className="input-field"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="input-field"
-                rows={2}
-                placeholder="Allergies, special needs, medication, etc."
-              />
-            </div>
-            <div className="md:col-span-2 flex space-x-3">
-              <button type="submit" className="btn-primary">
-                Check In
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
+            <div className="flex gap-2 pt-1">
+              <button type="submit" disabled={saving} className="btn-primary flex-1 text-sm">{saving?'Saving...':'Check In'}</button>
+              <button type="button" onClick={()=>setShowForm(false)} className="btn-secondary text-sm px-4">Cancel</button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Children List */}
-      {children.length > 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Child</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Age</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Parent/Guardian</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Check In</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Check Out</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {children.map((child) => (
-                  <tr key={child.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-800">{child.childName}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{child.age}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      <div>{child.parentName}</div>
-                      <div className="text-xs text-gray-400">{child.parentPhone}</div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{child.checkInTime}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{child.checkOutTime || '-'}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[child.status]}`}>
-                        {child.status.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {child.status === 'CHECKED_IN' && (
-                        <button
-                          onClick={() => handleCheckOut(child.id)}
-                          className="text-xs text-primary-600 hover:text-primary-800 font-medium"
-                        >
-                          Check Out
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {loading ? (
+        <div className="text-center py-12 text-gray-400 text-sm">Loading...</div>
+      ) : records.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+          <p className="text-gray-500 font-medium">No day care records for today.</p>
         </div>
       ) : (
-        <div className="text-center py-12 text-gray-500">
-          <p className="font-medium">No day care records for today.</p>
-          <p className="text-sm mt-1">Check in children using the button above.</p>
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+            <p className="font-semibold text-gray-700 text-sm">Today's Records</p>
+            <p className="text-xs text-gray-400">{new Date().toLocaleDateString('en-ZW',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {records.map(r=>(
+              <div key={r.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <span className="text-blue-700 font-bold text-xs">{r.childName[0]}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-800 text-sm">{r.childName} <span className="text-gray-400 font-normal">({r.age})</span></p>
+                    <p className="text-xs text-gray-400">Parent: {r.parentName} · {r.parentPhone}</p>
+                    {r.dietaryNeeds&&<p className="text-xs text-orange-500 mt-0.5">Diet: {r.dietaryNeeds}</p>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="text-right">
+                    <span className={'badge text-xs '+sC[r.status]}>{r.status.replace('_',' ')}</span>
+                    <p className="text-xs text-gray-400 mt-0.5">In: {r.checkInTime}{r.checkOutTime?' · Out: '+r.checkOutTime:''}</p>
+                  </div>
+                  {r.status==='CHECKED_IN'&&(
+                    <button onClick={()=>handleCheckOut(r.id)} className="btn-secondary text-xs py-1 px-3">Check Out</button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

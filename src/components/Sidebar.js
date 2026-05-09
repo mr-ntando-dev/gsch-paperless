@@ -15,6 +15,14 @@ const navItems = [
   { name: 'Reports', href: '/dashboard/reports', icon: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z' },
 ]
 
+const patientCareItems = [
+  { name: 'Patients', href: '/dashboard/patients', icon: 'M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0' },
+  { name: 'Admissions', href: '/dashboard/admissions', icon: 'M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.068.157 2.148.279 3.238.364.466.037.893.281 1.153.671L12 21l2.652-3.978c.26-.39.687-.634 1.153-.67 1.09-.086 2.17-.208 3.238-.365 1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z' },
+  { name: 'Observations', href: '/dashboard/observations', icon: 'M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178ZM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z' },
+  { name: 'Day Care', href: '/dashboard/daycare', icon: 'M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z' },
+  { name: 'Kitchen & Meals', href: '/dashboard/meals', icon: 'M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 13.5l-3 3m0 0-3-3m3 3V21M3 16.5V18a2.25 2.25 0 0 0 2.25 2.25h13.5A2.25 2.25 0 0 0 21 18v-1.5' },
+]
+
 const adminItems = [
   { name: 'Users', href: '/dashboard/users', icon: 'M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z' },
   { name: 'Dept Hierarchy', href: '/dashboard/hierarchy', icon: 'M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6' },
@@ -114,6 +122,24 @@ export default function Sidebar() {
             </Link>
           )
         })}
+
+        {/* Patient Care */}
+        <div className="pt-2">
+          {!collapsed && <p className="text-[9px] text-gray-400 uppercase tracking-widest font-semibold px-2.5 pb-1.5 pt-1">Patient Care</p>}
+          {collapsed && <hr className="border-gray-100 my-2" />}
+          {patientCareItems.map(item => {
+            const active = isActive(item.href)
+            return (
+              <Link key={item.href} href={item.href} title={collapsed ? item.name : undefined}
+                className={`flex items-center gap-3 px-2.5 py-2 rounded-xl transition-all text-sm ${
+                  active ? 'bg-primary-600 text-white font-medium shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+                }`}>
+                <NavIcon path={item.icon} />
+                {!collapsed && <span>{item.name}</span>}
+              </Link>
+            )
+          })}
+        </div>
 
         {/* Admin */}
         {['ADMIN', 'MANAGER', 'SUPERADMIN'].includes(userRole) && (

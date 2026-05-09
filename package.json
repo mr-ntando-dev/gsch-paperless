@@ -8,7 +8,9 @@
     "start": "next start",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "obfuscate": "node scripts/obfuscate.js",
+    "prebuild": "echo Build started by devntando"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
