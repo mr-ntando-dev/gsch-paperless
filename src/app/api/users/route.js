@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { getSession, isAdmin } from '@/lib/auth'
+import { getSession, isAdmin, isSuperAdmin } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 
 export async function GET() {
@@ -49,6 +49,12 @@ export async function POST(request) {
     if (!email || !name || !password || !departmentId) {
       return NextResponse.json({ error: 'email, name, password and departmentId are required' }, { status: 400 })
     }
+
+    // Only SUPERADMIN can create SUPERADMIN accounts
+    if (role === 'SUPERADMIN' && !isSuperAdmin(session)) {
+      return NextResponse.json({ error: 'Only SUPERADMIN can create SUPERADMIN accounts' }, { status: 403 })
+    }
+
 
     const hashedPassword = await bcrypt.hash(password, 12)
 

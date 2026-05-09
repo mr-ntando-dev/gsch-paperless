@@ -1,8 +1,12 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import toast from 'react-hot-toast'
 
 export default function AdminUsersPage() {
+  const { data: session } = useSession()
+  const isSuperAdmin = session?.user?.role === 'SUPERADMIN'
+
   const [users, setUsers] = useState([])
   const [departments, setDepartments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -35,7 +39,7 @@ export default function AdminUsersPage() {
         toast.success(editUser ? 'User updated' : 'User created — share credentials with them')
         setShowCreate(false)
         setEditUser(null)
-        setForm({ name: '', email: '', password: '', role: 'STAFF', departmentId: '' })
+        setForm({ name: '', email: '', password: '', role: 'STAFF', departmentId: '', isRosterManager: false })
         fetchAll()
       } else {
         const d = await res.json()
@@ -53,6 +57,19 @@ export default function AdminUsersPage() {
       body: JSON.stringify({ isActive: !user.isActive })
     })
     if (res.ok) { toast.success(`User ${user.isActive ? 'deactivated' : 'activated'}`); fetchAll() }
+    else { const d = await res.json(); toast.error(d.error || 'Failed') }
+  }
+
+  const hardDeleteUser = async (user) => {
+    if (!confirm(`PERMANENTLY DELETE "${user.name}"?\n\nThis will remove the user and all their activity logs forever. This CANNOT be undone.`)) return
+    const res = await fetch(`/api/users/${user.id}?hard=true`, { method: 'DELETE' })
+    if (res.ok) {
+      toast.success(`User "${user.name}" permanently deleted`)
+      fetchAll()
+    } else {
+      const d = await res.json()
+      toast.error(d.error || 'Failed to delete user')
+    }
   }
 
   const openEdit = (user) => {
@@ -78,7 +95,13 @@ export default function AdminUsersPage() {
   )
 
   const roleBadge = (role) => {
-    const m = { ADMIN: 'bg-red-900 text-red-300', MANAGER: 'bg-yellow-900 text-yellow-300', STAFF: 'bg-blue-900 text-blue-300', VIEWER: 'bg-gray-800 text-gray-400' }
+    const m = {
+      SUPERADMIN: 'bg-purple-900 text-purple-300 border border-purple-700',
+      ADMIN: 'bg-red-900 text-red-300',
+      MANAGER: 'bg-yellow-900 text-yellow-300',
+      STAFF: 'bg-blue-900 text-blue-300',
+      VIEWER: 'bg-gray-800 text-gray-400'
+    }
     return m[role] || 'bg-gray-800 text-gray-400'
   }
 
@@ -89,7 +112,7 @@ export default function AdminUsersPage() {
           <h2 className="text-2xl font-bold text-white">User Management</h2>
           <p className="text-gray-400 text-sm">Create accounts and manage access. Users cannot self-register.</p>
         </div>
-        <button onClick={() => { setEditUser(null); setForm({ name: '', email: '', password: '', role: 'STAFF', departmentId: '' }); setShowCreate(true) }}
+        <button onClick={() => { setEditUser(null); setForm({ name: '', email: '', password: '', role: 'STAFF', departmentId: '', isRosterManager: false }); setShowCreate(true) }}
           className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors">
           + Create User
         </button>
@@ -98,22 +121,23 @@ export default function AdminUsersPage() {
       <div className="flex items-center space-x-3">
         <input
           type="text"
-          placeholder="Search users..."
           value={filter}
           onChange={e => setFilter(e.target.value)}
-          className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 text-sm w-64 focus:outline-none focus:border-red-500"
+          placeholder="Filter by name, email or department..."
+          className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 text-sm w-72 focus:outline-none focus:border-red-500"
         />
         <span className="text-gray-500 text-sm">{filtered.length} users</span>
       </div>
 
+      {/* Create / Edit Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-white font-semibold text-lg mb-4">{editUser ? 'Edit User' : 'Create New User'}</h3>
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-white font-semibold text-lg mb-4">{editUser ? 'Edit User' : 'Create User'}</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-gray-400 text-xs uppercase tracking-wide">Full Name</label>
-                <input required value={form.name} onChange={e => setForm({...form, name: e.target.value})}
+                <input required type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
                   className="mt-1 w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500" />
               </div>
               <div>
@@ -135,6 +159,7 @@ export default function AdminUsersPage() {
                   <option value="VIEWER">Viewer</option>
                   <option value="MANAGER">Manager</option>
                   <option value="ADMIN">Admin</option>
+                  {isSuperAdmin && <option value="SUPERADMIN">Super Admin</option>}
                 </select>
               </div>
               <div>
@@ -170,47 +195,56 @@ export default function AdminUsersPage() {
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading...</div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-800">
-                <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Name</th>
-                <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Email</th>
-                <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Department</th>
-                <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Role</th>
-                <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Status</th>
-                <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Roster Mgr</th>
-                <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(user => (
-                <tr key={user.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-                  <td className="px-4 py-3 text-white text-sm font-medium">{user.name}</td>
-                  <td className="px-4 py-3 text-gray-400 text-sm">{user.email}</td>
-                  <td className="px-4 py-3 text-gray-300 text-sm">{user.department?.name || '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${roleBadge(user.role)}`}>{user.role}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded text-xs ${user.isActive ? 'bg-green-900/50 text-green-400' : 'bg-gray-800 text-gray-500'}`}>
-                      {user.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => toggleRosterManager(user)} className={`text-xs px-2 py-0.5 rounded ${user.isRosterManager ? 'bg-teal-900 text-teal-300' : 'bg-gray-800 text-gray-500 hover:text-gray-300'}`}>
-                      {user.isRosterManager ? '✓ Enabled' : 'Grant'}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 flex space-x-2">
-                    <button onClick={() => openEdit(user)} className="text-blue-400 hover:text-blue-300 text-xs">Edit</button>
-                    <button onClick={() => toggleActive(user)} className={`text-xs ${user.isActive ? 'text-red-400 hover:text-red-300' : 'text-green-400 hover:text-green-300'}`}>
-                      {user.isActive ? 'Deactivate' : 'Activate'}
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-800">
+                  <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Name</th>
+                  <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Email</th>
+                  <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Department</th>
+                  <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Role</th>
+                  <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Status</th>
+                  <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Roster Mgr</th>
+                  <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map(user => (
+                  <tr key={user.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+                    <td className="px-4 py-3 text-white text-sm font-medium">{user.name}</td>
+                    <td className="px-4 py-3 text-gray-400 text-sm">{user.email}</td>
+                    <td className="px-4 py-3 text-gray-300 text-sm">{user.department?.name || '—'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${roleBadge(user.role)}`}>{user.role}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded text-xs ${user.isActive ? 'bg-green-900/50 text-green-400' : 'bg-gray-800 text-gray-500'}`}>
+                        {user.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => toggleRosterManager(user)} className={`text-xs px-2 py-0.5 rounded ${user.isRosterManager ? 'bg-teal-900 text-teal-300' : 'bg-gray-800 text-gray-500 hover:text-gray-300'}`}>
+                        {user.isRosterManager ? '✓ Enabled' : 'Grant'}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button onClick={() => openEdit(user)} className="text-blue-400 hover:text-blue-300 text-xs">Edit</button>
+                        <button onClick={() => toggleActive(user)} className={`text-xs ${user.isActive ? 'text-orange-400 hover:text-orange-300' : 'text-green-400 hover:text-green-300'}`}>
+                          {user.isActive ? 'Deactivate' : 'Activate'}
+                        </button>
+                        {isSuperAdmin && user.id !== session?.user?.id && (
+                          <button onClick={() => hardDeleteUser(user)} className="text-red-500 hover:text-red-400 text-xs font-semibold px-1.5 py-0.5 rounded bg-red-950 hover:bg-red-900 transition-colors">
+                            ⚠ Delete
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
