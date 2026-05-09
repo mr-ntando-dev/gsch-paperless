@@ -51,9 +51,90 @@ export default function WelcomeModal() {
   if (!show || !userData) return null
 
   const dept = userData.department
+  const deptCode = dept?.code || ''
   const gradient = colorGradient[dept?.color] || 'from-primary-600 to-primary-800'
   const role = roleLabel[userData.role] || roleLabel.STAFF
   const firstName = userData.name?.split(' ')[0] || userData.name
+
+  // Role / dept-aware welcome headline and subtitle
+  const getWelcomeText = () => {
+    if (['SUPERADMIN', 'ADMIN'].includes(userData.role)) {
+      return {
+        headline: `Welcome back, ${firstName}! 🛡️`,
+        sub: 'You have full system access. Manage users, departments, and all hospital operations from your dashboard.',
+      }
+    }
+    if (userData.role === 'MANAGER') {
+      return {
+        headline: `Welcome, ${firstName}! 📋`,
+        sub: `You have management access for the ${dept?.name || 'your'} department. Oversee tasks, documents, and your team.`,
+      }
+    }
+    if (['PATIENT_CARE', 'CRD'].includes(deptCode)) {
+      return {
+        headline: `Welcome, ${firstName}! 🏥`,
+        sub: `You are now set up in the ${dept?.name || 'Clinical'} department. You have access to patient records, admissions, medications, and more.`,
+      }
+    }
+    if (deptCode === 'KITCHEN') {
+      return {
+        headline: `Welcome, ${firstName}! 🍽️`,
+        sub: `You are set up in the ${dept?.name || 'Kitchen'} department. You will receive and manage meal requests for patients here.`,
+      }
+    }
+    if (['BILLING', 'ACCOUNTS'].includes(deptCode)) {
+      return {
+        headline: `Welcome, ${firstName}! 💼`,
+        sub: `You are set up in ${dept?.name || 'Finance'}. You have access to invoices, billing records, and financial documents.`,
+      }
+    }
+    if (deptCode === 'IT') {
+      return {
+        headline: `Welcome, ${firstName}! 💻`,
+        sub: `You are set up in ${dept?.name || 'IT'}. You can manage the IT asset inventory and handle system maintenance requests.`,
+      }
+    }
+    if (deptCode === 'SAFETY_MAINTENANCE') {
+      return {
+        headline: `Welcome, ${firstName}! 🔧`,
+        sub: `You are set up in ${dept?.name || 'Maintenance'}. Facility maintenance requests from across the hospital will come to you here.`,
+      }
+    }
+    return {
+      headline: `Welcome, ${firstName}! 👋`,
+      sub: `Your account has been set up and you are now part of the Gweru Specialist Children's Hospital team.`,
+    }
+  }
+
+  // Role / dept-aware feature list for step 1
+  const getFeatureList = () => {
+    const base = [
+      { icon: '📄', title: 'Documents', desc: 'Create, track and manage documents for your department' },
+      { icon: '✅', title: 'Tasks', desc: 'View and action tasks assigned to you' },
+      { icon: '📝', title: 'Forms', desc: 'Fill out and submit digital forms' },
+      { icon: '💬', title: 'Messages', desc: 'Communicate securely within your department' },
+      { icon: '🏥', title: 'Department Board', desc: `View notices and announcements from ${dept?.shortName || 'your department'}` },
+    ]
+    if (['PATIENT_CARE', 'CRD'].includes(deptCode) || ['SUPERADMIN', 'ADMIN'].includes(userData.role)) {
+      base.push({ icon: '🧒', title: 'Patient Care', desc: 'Access patient records, admissions, observations, vitals, medications and more' })
+    }
+    if (['BILLING', 'ACCOUNTS'].includes(deptCode) || ['SUPERADMIN', 'ADMIN'].includes(userData.role)) {
+      base.push({ icon: '💰', title: 'Invoices', desc: 'Manage and track patient invoices and payment records' })
+    }
+    if (deptCode === 'KITCHEN' || ['SUPERADMIN', 'ADMIN'].includes(userData.role)) {
+      base.push({ icon: '🍽️', title: 'Kitchen & Meals', desc: 'Receive and fulfil meal requests from ward staff' })
+    }
+    if (deptCode === 'SAFETY_MAINTENANCE' || ['SUPERADMIN', 'ADMIN'].includes(userData.role)) {
+      base.push({ icon: '🔧', title: 'Maintenance', desc: 'Submit and track facility maintenance requests' })
+    }
+    if (['SUPERADMIN', 'ADMIN', 'MANAGER'].includes(userData.role)) {
+      base.push({ icon: '⚙️', title: 'Administration', desc: 'Manage users, departments, inventory, and system settings' })
+    }
+    return base
+  }
+
+  const welcomeText = getWelcomeText()
+  const featureList = getFeatureList()
 
   const steps = [
     // Step 0 — big welcome
@@ -68,11 +149,10 @@ export default function WelcomeModal() {
       </div>
 
       <h2 className="text-3xl font-bold text-gray-800 mt-6 mb-2">
-        Welcome, {firstName}! 👋
+        {welcomeText.headline}
       </h2>
       <p className="text-gray-500 text-base leading-relaxed">
-        Your account has been set up and you are now part of the<br />
-        <span className="font-semibold text-gray-700">Gweru Specialist Children&apos;s Hospital</span> team.
+        {welcomeText.sub}
       </p>
 
       <div className={`mt-6 rounded-2xl bg-gradient-to-br ${gradient} p-5 text-white text-left`}>
@@ -82,19 +162,13 @@ export default function WelcomeModal() {
       </div>
     </div>,
 
-    // Step 1 — what you can do
+    // Step 1 — what you can do (personalised per dept/role)
     <div key="features" className="text-left px-2">
       <h2 className="text-2xl font-bold text-gray-800 mb-1">Here&apos;s what you can do</h2>
       <p className="text-gray-500 text-sm mb-5">Everything you need is in the sidebar on the left.</p>
 
       <div className="space-y-3">
-        {[
-          { icon: '📄', title: 'Documents', desc: 'Create, track and approve documents for your department' },
-          { icon: '✅', title: 'Tasks', desc: 'View and manage tasks assigned to you' },
-          { icon: '📝', title: 'Forms', desc: 'Fill out and submit digital forms' },
-          { icon: '💬', title: 'Messages', desc: 'Communicate with your department' },
-          { icon: '🏥', title: 'Department Board', desc: `View notices and announcements from ${dept?.shortName || 'your dept'}` },
-        ].map(item => (
+        {featureList.map(item => (
           <div key={item.title} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl">
             <span className="text-2xl flex-shrink-0">{item.icon}</span>
             <div>
@@ -113,10 +187,14 @@ export default function WelcomeModal() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </div>
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">You&apos;re all set!</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-2">You&apos;re all set, {firstName}!</h2>
       <p className="text-gray-500 text-sm leading-relaxed mb-6">
-        Your login credentials were given to you by your administrator.<br />
-        Keep them safe and do not share them with anyone.
+        {['SUPERADMIN','ADMIN'].includes(userData.role)
+          ? 'You have full administrative access. Your credentials are sensitive — keep them secure.'
+          : userData.role === 'MANAGER'
+          ? `You can manage your team in ${dept?.name || 'your department'}. Your credentials are sensitive — keep them secure.`
+          : `Welcome to the ${dept?.name || 'GSCH'} team. Your login credentials were set up by your administrator. Keep them safe and do not share them.`
+        }
       </p>
 
       <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-left mb-2">

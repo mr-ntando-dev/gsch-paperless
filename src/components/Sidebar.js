@@ -40,6 +40,19 @@ const adminItems = [
   { name: 'Dept Hierarchy', href: '/dashboard/hierarchy', icon: 'M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6' },
 ]
 
+// Department-based access rules
+// Which dept codes can see Patient Care items
+const PATIENT_CARE_DEPTS = ['PATIENT_CARE', 'CRD', 'MANAGEMENT', 'HOSPITAL_RELATIONS']
+// Which dept codes can see Invoices
+const BILLING_DEPTS = ['BILLING', 'ACCOUNTS', 'MANAGEMENT']
+// Which dept codes can see Kitchen & Meals
+const KITCHEN_DEPTS = ['KITCHEN', 'PATIENT_CARE', 'CRD', 'MANAGEMENT']
+// Which dept codes can see IT Inventory (admin-only, handled separately)
+// Which dept codes can see Pharmacy
+const PHARMACY_DEPTS = ['PATIENT_CARE', 'CRD', 'MANAGEMENT']
+// Which dept codes can see Lab & Radiology
+const LAB_DEPTS = ['PATIENT_CARE', 'CRD', 'MANAGEMENT']
+
 const HIERARCHY = {
   MANAGEMENT: { tier: 1, label: 'Executive', dot: 'bg-slate-600' },
   HOSPITAL_RELATIONS: { tier: 2, label: 'Relations', dot: 'bg-indigo-500' },
@@ -83,6 +96,26 @@ export default function Sidebar() {
   })
 
   const isActive = (href) => pathname === href
+
+  const isAdminOrAbove = ['ADMIN', 'SUPERADMIN'].includes(userRole)
+  const isManagerOrAbove = ['ADMIN', 'SUPERADMIN', 'MANAGER'].includes(userRole)
+
+  // Returns true if the current user can see a given section
+  const canSeePatientCare = isAdminOrAbove || PATIENT_CARE_DEPTS.includes(userDeptCode)
+  const canSeeBilling     = isAdminOrAbove || BILLING_DEPTS.includes(userDeptCode)
+  const canSeeKitchen     = isAdminOrAbove || KITCHEN_DEPTS.includes(userDeptCode)
+  const canSeePharmacy    = isAdminOrAbove || PHARMACY_DEPTS.includes(userDeptCode)
+  const canSeeLab         = isAdminOrAbove || LAB_DEPTS.includes(userDeptCode)
+
+  // Filter patient care items based on dept
+  const visiblePatientCareItems = patientCareItems.filter(item => {
+    if (item.href === '/dashboard/invoices')    return canSeeBilling
+    if (item.href === '/dashboard/meals')       return canSeeKitchen
+    if (item.href === '/dashboard/pharmacy')    return canSeePharmacy
+    if (item.href === '/dashboard/lab-requests') return canSeeLab
+    // All remaining patient care items require patient care access
+    return canSeePatientCare
+  })
 
   return (
     <aside className={`${collapsed ? 'w-[68px]' : 'w-64'} bg-white border-r border-gray-100 min-h-screen flex flex-col transition-all duration-300 relative z-10`}>
@@ -135,23 +168,25 @@ export default function Sidebar() {
           )
         })}
 
-        {/* Patient Care */}
-        <div className="pt-2">
-          {!collapsed && <p className="text-[9px] text-gray-400 uppercase tracking-widest font-semibold px-2.5 pb-1.5 pt-1">Patient Care</p>}
-          {collapsed && <hr className="border-gray-100 my-2" />}
-          {patientCareItems.map(item => {
-            const active = isActive(item.href)
-            return (
-              <Link key={item.href} href={item.href} title={collapsed ? item.name : undefined}
-                className={`flex items-center gap-3 px-2.5 py-2 rounded-xl transition-all text-sm ${
-                  active ? 'bg-primary-600 text-white font-medium shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
-                }`}>
-                <NavIcon path={item.icon} />
-                {!collapsed && <span>{item.name}</span>}
-              </Link>
-            )
-          })}
-        </div>
+        {/* Patient Care — only shown to departments with access */}
+        {visiblePatientCareItems.length > 0 && (
+          <div className="pt-2">
+            {!collapsed && <p className="text-[9px] text-gray-400 uppercase tracking-widest font-semibold px-2.5 pb-1.5 pt-1">Patient Care</p>}
+            {collapsed && <hr className="border-gray-100 my-2" />}
+            {visiblePatientCareItems.map(item => {
+              const active = isActive(item.href)
+              return (
+                <Link key={item.href} href={item.href} title={collapsed ? item.name : undefined}
+                  className={`flex items-center gap-3 px-2.5 py-2 rounded-xl transition-all text-sm ${
+                    active ? 'bg-primary-600 text-white font-medium shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+                  }`}>
+                  <NavIcon path={item.icon} />
+                  {!collapsed && <span>{item.name}</span>}
+                </Link>
+              )
+            })}
+          </div>
+        )}
 
         {/* Admin */}
         {['ADMIN', 'MANAGER', 'SUPERADMIN'].includes(userRole) && (

@@ -6,6 +6,13 @@ export async function GET(request) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Only billing/admin roles can access invoice data
+    const allowedDepts = ['BILLING', 'ACCOUNTS', 'MANAGEMENT']
+    const userDeptCode = session.user.departmentCode
+    if (!['SUPERADMIN', 'ADMIN'].includes(session.user.role) && !allowedDepts.includes(userDeptCode)) {
+      return NextResponse.json({ error: 'Access denied. Invoice data is restricted to billing and finance departments.' }, { status: 403 })
+    }
+
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const patientId = searchParams.get('patientId')

@@ -6,6 +6,14 @@ import prisma from '@/lib/prisma'
 export async function GET(req) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Only clinical/admin roles can access lab & radiology data
+  const allowedDepts = ['PATIENT_CARE', 'CRD', 'MANAGEMENT']
+  const userDeptCode = session.user.departmentCode
+  if (!['SUPERADMIN', 'ADMIN'].includes(session.user.role) && !allowedDepts.includes(userDeptCode)) {
+    return NextResponse.json({ error: 'Access denied. Lab and radiology data is restricted to clinical departments.' }, { status: 403 })
+  }
+
   const { searchParams } = new URL(req.url)
   const patientId = searchParams.get('patientId')
   const type = searchParams.get('type') // LABORATORY | RADIOLOGY

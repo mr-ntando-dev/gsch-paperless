@@ -9,6 +9,13 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url)
     const careType = searchParams.get('careType')
     const search = searchParams.get('search')
+    // Only clinical/admin roles can access patient data
+    const allowedDepts = ['PATIENT_CARE', 'CRD', 'MANAGEMENT', 'HOSPITAL_RELATIONS']
+    const userDeptCode = session.user.departmentCode
+    if (!['SUPERADMIN', 'ADMIN'].includes(session.user.role) && !allowedDepts.includes(userDeptCode)) {
+      return NextResponse.json({ error: 'Access denied. Patient data is restricted to clinical departments.' }, { status: 403 })
+    }
+
     const where = { isActive: true }
     if (careType) where.careType = careType
     if (search) {
