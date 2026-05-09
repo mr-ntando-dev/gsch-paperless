@@ -294,6 +294,7 @@ export default function Sidebar() {
           </svg>
           {!collapsed && <span>Sign out</span>}
         </button>
+      </div>
     </aside>
   )
 }
