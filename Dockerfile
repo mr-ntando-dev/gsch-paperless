@@ -48,6 +48,10 @@ COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
 # Copy startup script
 COPY --from=builder /app/start.sh ./start.sh
 
+# Give nextjs user ownership of the prisma client so db push --skip-generate
+# can still write lock files without permission errors
+RUN chown -R nextjs:nodejs ./node_modules/.prisma ./node_modules/@prisma ./prisma
+
 USER nextjs
 
 EXPOSE 3000

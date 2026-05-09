@@ -2,7 +2,7 @@
 set -e
 
 echo "==> Syncing database schema..."
-npx prisma db push --accept-data-loss
+npx prisma db push --accept-data-loss --skip-generate
 
 echo "==> Seeding default data (upsert — safe to re-run)..."
 node prisma/seed.js
