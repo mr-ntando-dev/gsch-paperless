@@ -1,12 +1,12 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 
 const sC = { ACTIVE: 'bg-yellow-100 text-yellow-700', COMPLETED: 'bg-green-100 text-green-700', ESCALATED: 'bg-red-100 text-red-700' }
 const EMPTY_F = { patientId: '', reason: '', doctor: '', observationArea: 'General', notes: '' }
 
-export default function ObservationsPage() {
+function ObservationsContent() {
   const searchParams = useSearchParams()
   const prePatient = searchParams.get('patient')
   const [observations, setObservations] = useState([])
@@ -183,5 +183,13 @@ export default function ObservationsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ObservationsPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-12 text-gray-400 text-sm">Loading...</div>}>
+      <ObservationsContent />
+    </Suspense>
   )
 }

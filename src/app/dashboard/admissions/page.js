@@ -1,12 +1,12 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 
 const sC = { ADMITTED: 'bg-red-100 text-red-700', DISCHARGED: 'bg-green-100 text-green-700', TRANSFERRED: 'bg-yellow-100 text-yellow-700' }
 const EMPTY_F = { patientId: '', ward: '', bed: '', doctor: '', diagnosis: '', notes: '', dietaryNotes: '' }
 
-export default function AdmissionsPage() {
+function AdmissionsContent() {
   const searchParams = useSearchParams()
   const prePatient = searchParams.get('patient')
   const [admissions, setAdmissions] = useState([])
@@ -183,5 +183,13 @@ export default function AdmissionsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AdmissionsPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-12 text-gray-400 text-sm">Loading...</div>}>
+      <AdmissionsContent />
+    </Suspense>
   )
 }
