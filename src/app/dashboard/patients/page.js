@@ -211,8 +211,10 @@ export default function PatientsPage() {
                   {selected.gender&&selected.gender!=='UNKNOWN'&&<div><span className="text-gray-400">Gender</span><p className="font-medium text-gray-700 mt-0.5">{selected.gender}</p></div>}
                 </div>
                 <div className="flex flex-col gap-2">
+                  <Link href={'/dashboard/patients/'+selected.id} className="btn-primary text-xs text-center py-2">View Full History</Link>
                   <Link href={'/dashboard/admissions?patient='+selected.id} className="btn-secondary text-xs text-center py-2">Admission Records</Link>
                   <Link href={'/dashboard/observations?patient='+selected.id} className="btn-secondary text-xs text-center py-2">Observation Records</Link>
+                  <Link href={'/dashboard/invoices?patient='+selected.id} className="btn-secondary text-xs text-center py-2">Invoices</Link>
                   <button onClick={() => { setKitchenReqOpen(!kitchenReqOpen); setKitchenOpen(false) }} className="btn-secondary text-xs py-2 text-left flex items-center gap-2">
                     <svg className="w-4 h-4 text-orange-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 13.5l-3 3m0 0-3-3m3 3V21M3 16.5V18a2.25 2.25 0 0 0 2.25 2.25h13.5A2.25 2.25 0 0 0 21 18v-1.5" /></svg>
                     Send Kitchen Request

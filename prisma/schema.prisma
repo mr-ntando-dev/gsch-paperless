@@ -98,6 +98,7 @@ model Document {
   tags         String[]
   fileUrl      String?
   version      Int              @default(1)
+  versionHistory Json?
   authorId     String
   author       User             @relation("AuthoredDocuments", fields: [authorId], references: [id])
   approvals    Approval[]
@@ -213,6 +214,7 @@ model Patient {
   dayCareRecords DayCareRecord[]
   kitchenRequests KitchenRequest[]
   patientMessages PatientMessage[]
+  invoices      Invoice[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 }
@@ -391,3 +393,78 @@ model TaskEscalation {
 
   @@map("task_escalations")
 }
+
+// --- Invoices / Billing ---
+model Invoice {
+  id            String         @id @default(cuid())
+  invoiceNumber String         @unique
+  patientId     String
+  patient       Patient        @relation(fields: [patientId], references: [id])
+  admissionId   String?
+  status        String         @default("UNPAID") // UNPAID | PARTIAL | PAID | CANCELLED
+  issueDate     DateTime       @default(now())
+  dueDate       DateTime?
+  paidAt        DateTime?
+  totalAmount   Float          @default(0)
+  paidAmount    Float          @default(0)
+  notes         String?        @db.Text
+  createdBy     String
+  lineItems     InvoiceItem[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Float    @default(1)
+  unitPrice   Float
+  total       Float
+  category    String   @default("GENERAL") // WARD | DOCTOR | MEDICATION | MEAL | PROCEDURE | GENERAL
+  createdAt   DateTime @default(now())
+}
+
+// --- IT Inventory ---
+model InventoryAsset {
+  id           String    @id @default(cuid())
+  assetTag     String    @unique
+  name         String
+  category     String    @default("COMPUTER") // COMPUTER | PRINTER | NETWORK | MEDICAL | FURNITURE | OTHER
+  brand        String?
+  model        String?
+  serialNumber String?
+  location     String
+  assignedTo   String?
+  condition    String    @default("GOOD") // EXCELLENT | GOOD | FAIR | POOR | DECOMMISSIONED
+  purchaseDate DateTime?
+  warrantyExpiry DateTime?
+  notes        String?   @db.Text
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// --- Baby Clinic (persistent) ---
+model BabyClinicVisit {
+  id          String   @id @default(cuid())
+  babyName    String
+  dob         String
+  parentName  String
+  parentPhone String
+  visitType   String   @default("IMMUNIZATION") // IMMUNIZATION | GROWTH_CHECK | SICK_VISIT | FOLLOW_UP
+  weight      String?
+  height      String?
+  notes       String?  @db.Text
+  status      String   @default("WAITING") // WAITING | IN_PROGRESS | COMPLETED | NO_SHOW
+  visitDate   String
+  visitTime   String
+  attendedBy  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// --- Notifications (wire up existing model) ---
+// Already exists as Notification model above — no change needed
+

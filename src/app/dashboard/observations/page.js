@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 
 const sC = { ACTIVE: 'bg-yellow-100 text-yellow-700', COMPLETED: 'bg-green-100 text-green-700', ESCALATED: 'bg-red-100 text-red-700' }
 const EMPTY_F = { patientId: '', reason: '', doctor: '', observationArea: 'General', notes: '' }
+const EMPTY_VITALS = { bp: '', pulse: '', temp: '', spo2: '', rr: '' }
 
 function ObservationsContent() {
   const searchParams = useSearchParams()
@@ -13,6 +14,9 @@ function ObservationsContent() {
   const [patients, setPatients] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [vitalsModal, setVitalsModal] = useState({ open: false, obsId: null })
+  const [vitalsForm, setVitalsForm] = useState(EMPTY_VITALS)
+  const [savingVitals, setSavingVitals] = useState(false)
   const [form, setForm] = useState({ ...EMPTY_F, patientId: prePatient || '' })
   const [saving, setSaving] = useState(false)
   const [filterStatus, setFilterStatus] = useState('ACTIVE')
@@ -48,6 +52,17 @@ function ObservationsContent() {
       if (r.ok) { toast.success('Status updated'); load() }
       else toast.error('Failed to update')
     } catch { toast.error('Network error') }
+  }
+
+  const handleVitalsSave = async () => {
+    if (!Object.values(vitalsForm).some(v => v)) return toast.error('Enter at least one vital')
+    setSavingVitals(true)
+    try {
+      const vitals = Object.fromEntries(Object.entries(vitalsForm).filter(([, v]) => v))
+      const r = await fetch('/api/observations/vitals', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: vitalsModal.obsId, vitals }) })
+      if (r.ok) { toast.success('Vitals recorded'); setVitalsModal({ open: false, obsId: null }); setVitalsForm(EMPTY_VITALS); load() }
+      else toast.error('Failed to save vitals')
+    } finally { setSavingVitals(false) }
   }
 
   const elapsed = (start) => {
@@ -122,9 +137,27 @@ function ObservationsContent() {
                         {o.endDate&&<p>Ended: {new Date(o.endDate).toLocaleString('en-ZW')}</p>}
                       </div>
                       {o.status==='ACTIVE'&&(
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
+                          <button onClick={(e)=>{e.stopPropagation();setVitalsModal({open:true,obsId:o.id})}} className="btn-secondary text-xs text-blue-700 border-blue-200 hover:bg-blue-50">+ Record Vitals</button>
                           <button onClick={(e)=>{e.stopPropagation();updateStatus(o,'COMPLETED')}} className="btn-secondary text-xs text-green-700 border-green-200 hover:bg-green-50">Mark Completed</button>
-                          <button onClick={(e)=>{e.stopPropagation();updateStatus(o,'ESCALATED')}} className="btn-secondary text-xs text-red-700 border-red-200 hover:bg-red-50">Escalate to Admission</button>
+                          <button onClick={(e)=>{e.stopPropagation();updateStatus(o,'ESCALATED')}} className="btn-secondary text-xs text-red-700 border-red-200 hover:bg-red-50">Escalate</button>
+                        </div>
+                      )}
+                      {o.vitals && Array.isArray(o.vitals) && o.vitals.length > 0 && (
+                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-2.5">
+                          <p className="text-xs font-semibold text-blue-700 mb-1.5">Vitals History ({o.vitals.length} readings)</p>
+                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                            {[...o.vitals].reverse().map((v, vi) => (
+                              <div key={vi} className="text-xs text-blue-700 flex flex-wrap gap-x-3 gap-y-0.5 border-b border-blue-100 pb-1 last:border-0">
+                                {v.bp && <span>BP: <strong>{v.bp}</strong></span>}
+                                {v.pulse && <span>HR: <strong>{v.pulse}</strong></span>}
+                                {v.temp && <span>Temp: <strong>{v.temp}°C</strong></span>}
+                                {v.spo2 && <span>SpO₂: <strong>{v.spo2}%</strong></span>}
+                                {v.rr && <span>RR: <strong>{v.rr}</strong></span>}
+                                <span className="text-blue-400 ml-auto">{v.recordedBy} · {new Date(v.recordedAt).toLocaleTimeString('en-ZW',{hour:'2-digit',minute:'2-digit'})}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -182,6 +215,30 @@ function ObservationsContent() {
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+      {vitalsModal.open && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+            <h3 className="font-semibold text-gray-800 mb-4">Record Vitals</h3>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="text-xs text-gray-500 font-medium">Blood Pressure</label><input value={vitalsForm.bp} onChange={e=>setVitalsForm({...vitalsForm,bp:e.target.value})} placeholder="e.g. 120/80" className="input-field text-sm mt-1" /></div>
+                <div><label className="text-xs text-gray-500 font-medium">Heart Rate (bpm)</label><input value={vitalsForm.pulse} onChange={e=>setVitalsForm({...vitalsForm,pulse:e.target.value})} placeholder="e.g. 72" className="input-field text-sm mt-1" /></div>
+                <div><label className="text-xs text-gray-500 font-medium">Temperature (°C)</label><input value={vitalsForm.temp} onChange={e=>setVitalsForm({...vitalsForm,temp:e.target.value})} placeholder="e.g. 37.2" className="input-field text-sm mt-1" /></div>
+                <div><label className="text-xs text-gray-500 font-medium">SpO₂ (%)</label><input value={vitalsForm.spo2} onChange={e=>setVitalsForm({...vitalsForm,spo2:e.target.value})} placeholder="e.g. 98" className="input-field text-sm mt-1" /></div>
+                <div><label className="text-xs text-gray-500 font-medium">Resp. Rate (/min)</label><input value={vitalsForm.rr} onChange={e=>setVitalsForm({...vitalsForm,rr:e.target.value})} placeholder="e.g. 16" className="input-field text-sm mt-1" /></div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button onClick={handleVitalsSave} disabled={savingVitals} className="btn-primary flex-1 text-sm">{savingVitals ? 'Saving...' : 'Save Vitals'}</button>
+                <button onClick={() => { setVitalsModal({open:false,obsId:null}); setVitalsForm(EMPTY_VITALS) }} className="btn-secondary text-sm px-4">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

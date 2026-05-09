@@ -32,6 +32,7 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [showRoute, setShowRoute] = useState(null) // doc to route
+  const [versionDoc, setVersionDoc] = useState(null) // doc showing version history
   const [newDoc, setNewDoc] = useState({ title: '', content: '', type: 'General', priority: 'MEDIUM' })
   const [routeForm, setRouteForm] = useState({ toDeptId: '', note: '', priority: 'MEDIUM' })
   const [submitting, setSubmitting] = useState(false)
@@ -200,7 +201,31 @@ export default function DocumentsPage() {
                       </button>
                     )}
                   </div>
-                  <p className="text-[10px] text-gray-300 mt-2">{new Date(doc.createdAt).toLocaleDateString('en-ZW', { day:'numeric', month:'short', year:'numeric' })}</p>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-[10px] text-gray-300">{new Date(doc.createdAt).toLocaleDateString('en-ZW', { day:'numeric', month:'short', year:'numeric' })}</p>
+                    {doc.version > 1 && (
+                      <button onClick={() => setVersionDoc(versionDoc?.id === doc.id ? null : doc)} className="text-[10px] text-primary-500 hover:text-primary-700 font-medium">
+                        v{doc.version} · History
+                      </button>
+                    )}
+                  </div>
+                  {versionDoc?.id === doc.id && Array.isArray(doc.versionHistory) && doc.versionHistory.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Version History</p>
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                        {[...doc.versionHistory].reverse().map((v, i) => (
+                          <div key={i} className="flex items-start gap-2 text-[11px]">
+                            <span className="bg-primary-100 text-primary-700 rounded px-1 py-0.5 font-bold flex-shrink-0">v{v.version}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-gray-700 font-medium truncate">{v.title}</p>
+                              {v.note && <p className="text-gray-400">{v.note}</p>}
+                              <p className="text-gray-300">{v.editedBy} · {new Date(v.editedAt).toLocaleDateString('en-ZW')}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

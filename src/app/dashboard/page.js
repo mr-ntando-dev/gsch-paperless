@@ -37,7 +37,7 @@ const STAT_ICONS = {
 
 export default function DashboardPage() {
   const { data: session } = useSession()
-  const [stats, setStats] = useState({ documents: 0, tasks: 0, maintenance: 0, forms: 0 })
+  const [stats, setStats] = useState({ documents: 0, tasks: 0, maintenance: 0, forms: 0, patients: 0, admissions: 0, invoices: 0, assets: 0 })
   const [departments, setDepartments] = useState([])
   const [pendingRoutes, setPendingRoutes] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -45,13 +45,17 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [docsRes, tasksRes, maintenanceRes, formsRes, deptsRes, routesRes] = await Promise.allSettled([
+        const [docsRes, tasksRes, maintenanceRes, formsRes, deptsRes, routesRes, patientsRes, admissionsRes, invoicesRes, assetsRes] = await Promise.allSettled([
           fetch('/api/documents'),
           fetch('/api/tasks'),
           fetch('/api/maintenance'),
           fetch('/api/forms'),
           fetch('/api/departments'),
           fetch('/api/routes?direction=incoming'),
+          fetch('/api/patients'),
+          fetch('/api/admissions?status=ADMITTED'),
+          fetch('/api/invoices?status=UNPAID'),
+          fetch('/api/inventory'),
         ])
         const docs = docsRes.status === 'fulfilled' && docsRes.value.ok ? await docsRes.value.json() : []
         const tasks = tasksRes.status === 'fulfilled' && tasksRes.value.ok ? await tasksRes.value.json() : []
@@ -59,8 +63,12 @@ export default function DashboardPage() {
         const forms = formsRes.status === 'fulfilled' && formsRes.value.ok ? await formsRes.value.json() : []
         const depts = deptsRes.status === 'fulfilled' && deptsRes.value.ok ? await deptsRes.value.json() : []
         const routes = routesRes.status === 'fulfilled' && routesRes.value.ok ? await routesRes.value.json() : []
+        const patients = patientsRes.status === 'fulfilled' && patientsRes.value.ok ? await patientsRes.value.json() : []
+        const admissions = admissionsRes.status === 'fulfilled' && admissionsRes.value.ok ? await admissionsRes.value.json() : []
+        const invoices = invoicesRes.status === 'fulfilled' && invoicesRes.value.ok ? await invoicesRes.value.json() : []
+        const assets = assetsRes.status === 'fulfilled' && assetsRes.value.ok ? await assetsRes.value.json() : []
 
-        setStats({ documents: Array.isArray(docs) ? docs.length : 0, tasks: Array.isArray(tasks) ? tasks.length : 0, maintenance: Array.isArray(maint) ? maint.length : 0, forms: Array.isArray(forms) ? forms.length : 0 })
+        setStats({ documents: Array.isArray(docs) ? docs.length : 0, tasks: Array.isArray(tasks) ? tasks.length : 0, maintenance: Array.isArray(maint) ? maint.length : 0, forms: Array.isArray(forms) ? forms.length : 0, patients: Array.isArray(patients) ? patients.length : 0, admissions: Array.isArray(admissions) ? admissions.length : 0, invoices: Array.isArray(invoices) ? invoices.length : 0, assets: Array.isArray(assets) ? assets.length : 0 })
         setDepartments(Array.isArray(depts) ? depts.filter(d => d.isActive) : [])
         setPendingRoutes(Array.isArray(routes) ? routes.filter(r => r.status === 'PENDING').length : 0)
       } finally {
@@ -76,12 +84,27 @@ export default function DashboardPage() {
     return tA - tB
   })
 
-  const statCards = [
-    { label: 'Documents', value: stats.documents, href: '/dashboard/documents', color: 'bg-blue-500', icon: STAT_ICONS.Documents },
-    { label: 'Active Tasks', value: stats.tasks, href: '/dashboard/tasks', color: 'bg-emerald-500', icon: STAT_ICONS.Tasks },
-    { label: 'Maintenance', value: stats.maintenance, href: '/dashboard/maintenance', color: 'bg-amber-500', icon: STAT_ICONS.Maintenance },
-    { label: 'Forms', value: stats.forms, href: '/dashboard/forms', color: 'bg-purple-500', icon: STAT_ICONS.Forms },
+  const role = session?.user?.role
+  const deptCode = session?.user?.departmentCode
+
+  // Role-based stat cards
+  const isPatientCare = ['PATIENT_CARE', 'CRD'].includes(deptCode) || ['SUPERADMIN','ADMIN'].includes(role)
+  const isBilling = ['BILLING', 'ACCOUNTS'].includes(deptCode) || ['SUPERADMIN','ADMIN'].includes(role)
+  const isIT = deptCode === 'IT' || ['SUPERADMIN','ADMIN'].includes(role)
+  const isKitchen = deptCode === 'KITCHEN' || ['SUPERADMIN','ADMIN'].includes(role)
+  const isMaintenance = deptCode === 'SAFETY_MAINTENANCE' || ['SUPERADMIN','ADMIN'].includes(role)
+
+  const allStatCards = [
+    { label: 'Documents', value: stats.documents, href: '/dashboard/documents', color: 'bg-blue-500', icon: STAT_ICONS.Documents, show: true },
+    { label: 'Active Tasks', value: stats.tasks, href: '/dashboard/tasks', color: 'bg-emerald-500', icon: STAT_ICONS.Tasks, show: true },
+    { label: 'Patients', value: stats.patients, href: '/dashboard/patients', color: 'bg-teal-500', icon: 'M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0', show: isPatientCare },
+    { label: 'Admitted', value: stats.admissions, href: '/dashboard/admissions', color: 'bg-red-500', icon: 'M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.068.157 2.148.279 3.238.364.466.037.893.281 1.153.671L12 21l2.652-3.978c.26-.39.687-.634 1.153-.67 1.09-.086 2.17-.208 3.238-.365 1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z', show: isPatientCare },
+    { label: 'Unpaid Invoices', value: stats.invoices, href: '/dashboard/invoices', color: 'bg-orange-500', icon: 'M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z', show: isBilling },
+    { label: 'IT Assets', value: stats.assets, href: '/dashboard/inventory', color: 'bg-purple-500', icon: 'M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0H3', show: isIT },
+    { label: 'Maintenance', value: stats.maintenance, href: '/dashboard/maintenance', color: 'bg-amber-500', icon: STAT_ICONS.Maintenance, show: isMaintenance },
+    { label: 'Forms', value: stats.forms, href: '/dashboard/forms', color: 'bg-purple-500', icon: STAT_ICONS.Forms, show: true },
   ]
+  const statCards = allStatCards.filter(c => c.show)
 
   const firstName = session?.user?.name?.split(' ')[0] || 'there'
   const hour = new Date().getHours()
