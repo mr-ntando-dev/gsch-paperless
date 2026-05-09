@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import toast from 'react-hot-toast'
 
 const colorOptions = ['blue','teal','green','yellow','orange','red','purple','gray','pink','indigo']
@@ -10,6 +11,9 @@ const colorPreview = {
 }
 
 export default function AdminDepartmentsPage() {
+  const { data: session } = useSession()
+  const isSuperAdmin = session?.user?.role === 'SUPERADMIN'
+
   const [departments, setDepartments] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
@@ -50,6 +54,30 @@ export default function AdminDepartmentsPage() {
       body: JSON.stringify({ isActive: !dept.isActive })
     })
     if (res.ok) { toast.success(dept.isActive ? 'Department deactivated' : 'Department activated'); fetchDepts() }
+    else { const d = await res.json(); toast.error(d.error || 'Failed') }
+  }
+
+  const hardDeleteDept = async (dept) => {
+    const userCount = dept._count?.users || 0
+    const docCount = dept._count?.documents || 0
+    const taskCount = dept._count?.tasks || 0
+    const warning = [
+      `PERMANENTLY DELETE department "${dept.name}" (${dept.code})?`,
+      '',
+      'This will:',
+      `• Unlink ${userCount} user(s) from this department`,
+      `• Unlink ${docCount} document(s)`,
+      `• Unlink ${taskCount} task(s)`,
+      '• Delete all duty rosters, notices, and dept items',
+      '• Remove all document routes involving this department',
+      '',
+      'This CANNOT be undone.',
+    ].join('\n')
+    if (!confirm(warning)) return
+    const res = await fetch(`/api/departments/${dept.id}?hard=true`, { method: 'DELETE' })
+    const data = await res.json()
+    if (res.ok) { toast.success(data.message || 'Department permanently deleted'); fetchDepts() }
+    else toast.error(data.error || 'Failed to delete department')
   }
 
   const openEdit = (dept) => {
@@ -140,17 +168,31 @@ export default function AdminDepartmentsPage() {
                 {dept.isActive ? 'Active' : 'Inactive'}
               </span>
             </div>
+
             {dept.description && <p className="text-gray-500 text-xs mb-3">{dept.description}</p>}
+
             <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
               <span>{dept._count?.users || 0} users</span>
               <span>{dept._count?.documents || 0} docs</span>
               <span>{dept._count?.tasks || 0} tasks</span>
             </div>
-            <div className="flex space-x-2">
-              <button onClick={() => openEdit(dept)} className="flex-1 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs transition-colors">Edit</button>
-              <button onClick={() => toggleActive(dept)} className={`flex-1 py-1.5 rounded text-xs transition-colors ${dept.isActive ? 'bg-red-900/30 hover:bg-red-900/50 text-red-400' : 'bg-green-900/30 hover:bg-green-900/50 text-green-400'}`}>
+
+            <div className="flex gap-2">
+              <button onClick={() => openEdit(dept)}
+                className="flex-1 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs transition-colors">
+                Edit
+              </button>
+              <button onClick={() => toggleActive(dept)}
+                className={`flex-1 py-1.5 rounded text-xs transition-colors ${dept.isActive ? 'bg-orange-900/30 hover:bg-orange-900/50 text-orange-400' : 'bg-green-900/30 hover:bg-green-900/50 text-green-400'}`}>
                 {dept.isActive ? 'Deactivate' : 'Activate'}
               </button>
+              {isSuperAdmin && (
+                <button onClick={() => hardDeleteDept(dept)}
+                  className="px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-400 hover:text-red-300 rounded text-xs font-semibold transition-colors border border-red-900/50"
+                  title="Permanently delete this department (SUPERADMIN only)">
+                  ⚠ Delete
+                </button>
+              )}
             </div>
           </div>
         ))}
