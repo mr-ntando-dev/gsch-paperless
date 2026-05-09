@@ -2,10 +2,12 @@
 set -e
 
 echo "==> Syncing database schema..."
-npx prisma db push --accept-data-loss --skip-generate
+# MIGRATE_DATABASE_URL must be the pooler URL WITHOUT ?pgbouncer=true
+# DATABASE_URL can have pgbouncer=true for the app runtime
+DATABASE_URL="$MIGRATE_DATABASE_URL" npx prisma db push --accept-data-loss --skip-generate
 
 echo "==> Seeding default data (upsert — safe to re-run)..."
-node prisma/seed.js
+DATABASE_URL="$MIGRATE_DATABASE_URL" node prisma/seed.js
 
 echo "==> Starting MediFile..."
 exec node server.js
