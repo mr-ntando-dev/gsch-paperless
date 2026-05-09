@@ -31,6 +31,15 @@ enum Priority {
   URGENT
 }
 
+model SiteSettings {
+  id        String   @id @default("singleton")
+  siteName  String   @default("MediFile")
+  logoUrl   String?
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
 model DepartmentModel {
   id          String   @id @default(cuid())
   code        String   @unique

@@ -61,7 +61,17 @@ export default function AdminUsersPage() {
   }
 
   const hardDeleteUser = async (user) => {
-    if (!confirm(`PERMANENTLY DELETE "${user.name}"?\n\nThis will remove the user and all their activity logs forever. This CANNOT be undone.`)) return
+    const isAdminTarget = user.role === 'ADMIN'
+    const warningMsg = isAdminTarget
+      ? `DELETE ADMIN ACCOUNT: "${user.name}" (${user.email})\n\nThis admin user will be permanently removed along with all their activity logs.\n\nThis action CANNOT be undone. Are you absolutely sure?`
+      : `PERMANENTLY DELETE "${user.name}"?\n\nThis will remove the user and all their activity logs forever. This CANNOT be undone.`
+    if (!confirm(warningMsg)) return
+    // Extra confirmation for admin deletion
+    if (isAdminTarget) {
+      if (!confirm(`FINAL WARNING: You are deleting an ADMIN account.\n\nType this into the next prompt to confirm.`)) return
+      const typed = prompt(`Type DELETE to confirm permanent removal of admin "${user.name}":`)
+      if (typed !== 'DELETE') { toast.error('Deletion cancelled — confirmation text did not match.'); return }
+    }
     const res = await fetch(`/api/users/${user.id}?hard=true`, { method: 'DELETE' })
     if (res.ok) {
       toast.success(`User "${user.name}" permanently deleted`)
@@ -233,9 +243,17 @@ export default function AdminUsersPage() {
                         <button onClick={() => toggleActive(user)} className={`text-xs ${user.isActive ? 'text-orange-400 hover:text-orange-300' : 'text-green-400 hover:text-green-300'}`}>
                           {user.isActive ? 'Deactivate' : 'Activate'}
                         </button>
-                        {isSuperAdmin && user.id !== session?.user?.id && (
-                          <button onClick={() => hardDeleteUser(user)} className="text-red-500 hover:text-red-400 text-xs font-semibold px-1.5 py-0.5 rounded bg-red-950 hover:bg-red-900 transition-colors">
-                            ⚠ Delete
+                        {isSuperAdmin && user.id !== session?.user?.id && user.role !== 'SUPERADMIN' && (
+                          <button
+                            onClick={() => hardDeleteUser(user)}
+                            title={user.role === 'ADMIN' ? 'Delete Admin account permanently' : 'Delete user permanently'}
+                            className={`text-xs font-semibold px-1.5 py-0.5 rounded transition-colors ${
+                              user.role === 'ADMIN'
+                                ? 'text-orange-400 hover:text-orange-300 bg-orange-950 hover:bg-orange-900'
+                                : 'text-red-500 hover:text-red-400 bg-red-950 hover:bg-red-900'
+                            }`}
+                          >
+                            {user.role === 'ADMIN' ? '⚠ Delete Admin' : '⚠ Delete'}
                           </button>
                         )}
                       </div>

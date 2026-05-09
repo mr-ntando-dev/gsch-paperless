@@ -61,6 +61,11 @@ export async function DELETE(request, { params }) {
     }
 
     if (hardDelete && isSuperAdmin(session)) {
+      // Prevent deleting another SUPERADMIN account
+      const targetUser = await prisma.user.findUnique({ where: { id: params.id }, select: { role: true, name: true, email: true } })
+      if (targetUser?.role === 'SUPERADMIN') {
+        return NextResponse.json({ error: 'Cannot delete another SUPERADMIN account' }, { status: 403 })
+      }
       // SUPERADMIN: permanently delete the user and all their activity logs
       await prisma.activityLog.deleteMany({ where: { userId: params.id } })
       const deleted = await prisma.user.delete({ where: { id: params.id } })
