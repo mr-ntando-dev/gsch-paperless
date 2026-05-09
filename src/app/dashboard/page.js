@@ -50,20 +50,28 @@ export default function DashboardPage() {
   const [lowStockItems, setLowStockItems] = useState([])
   const [lowStockDismissed, setLowStockDismissed] = useState(false)
 
+  const userRole = session?.user?.role
+  const userDept = session?.user?.departmentCode
+
   useEffect(() => {
+    // AbortController so all in-flight fetches are cancelled on unmount / re-run
+    const controller = new AbortController()
+    const { signal } = controller
+    const safe = (url) => fetch(url, { signal })
+
     const fetchData = async () => {
       try {
         const [docsRes, tasksRes, maintenanceRes, formsRes, deptsRes, routesRes, patientsRes, admissionsRes, invoicesRes, assetsRes] = await Promise.allSettled([
-          fetch('/api/documents'),
-          fetch('/api/tasks'),
-          fetch('/api/maintenance'),
-          fetch('/api/forms'),
-          fetch('/api/departments'),
-          fetch('/api/routes?direction=incoming'),
-          fetch('/api/patients'),
-          fetch('/api/admissions?status=ADMITTED'),
-          fetch('/api/invoices?status=UNPAID'),
-          fetch('/api/inventory'),
+          safe('/api/documents'),
+          safe('/api/tasks'),
+          safe('/api/maintenance'),
+          safe('/api/forms'),
+          safe('/api/departments'),
+          safe('/api/routes?direction=incoming'),
+          safe('/api/patients'),
+          safe('/api/admissions?status=ADMITTED'),
+          safe('/api/invoices?status=UNPAID'),
+          safe('/api/inventory'),
         ])
         const docs = docsRes.status === 'fulfilled' && docsRes.value.ok ? await docsRes.value.json() : []
         const tasks = tasksRes.status === 'fulfilled' && tasksRes.value.ok ? await tasksRes.value.json() : []
@@ -71,10 +79,13 @@ export default function DashboardPage() {
         const forms = formsRes.status === 'fulfilled' && formsRes.value.ok ? await formsRes.value.json() : []
         const depts = deptsRes.status === 'fulfilled' && deptsRes.value.ok ? await deptsRes.value.json() : []
         const routes = routesRes.status === 'fulfilled' && routesRes.value.ok ? await routesRes.value.json() : []
+        // Reuse these two for the patient ribbon below — no second fetch needed
         const patients = patientsRes.status === 'fulfilled' && patientsRes.value.ok ? await patientsRes.value.json() : []
         const admissions = admissionsRes.status === 'fulfilled' && admissionsRes.value.ok ? await admissionsRes.value.json() : []
         const invoices = invoicesRes.status === 'fulfilled' && invoicesRes.value.ok ? await invoicesRes.value.json() : []
         const assets = assetsRes.status === 'fulfilled' && assetsRes.value.ok ? await assetsRes.value.json() : []
+
+        if (signal.aborted) return
 
         setStats({ documents: Array.isArray(docs) ? docs.length : 0, tasks: Array.isArray(tasks) ? tasks.length : 0, maintenance: Array.isArray(maint) ? maint.length : 0, forms: Array.isArray(forms) ? forms.length : 0, patients: Array.isArray(patients) ? patients.length : 0, admissions: Array.isArray(admissions) ? admissions.length : 0, invoices: Array.isArray(invoices) ? invoices.length : 0, assets: Array.isArray(assets) ? assets.length : 0 })
         // Count overdue tasks (due date in past, not DONE)
@@ -83,55 +94,52 @@ export default function DashboardPage() {
         setOverdueTasks(overdueCount)
         setDepartments(Array.isArray(depts) ? depts.filter(d => d.isActive) : [])
         setPendingRoutes(Array.isArray(routes) ? routes.filter(r => r.status === 'PENDING').length : 0)
+
+        // Upgrade 1 — Patient Status Ribbon: reuse already-fetched patients + admissions data
+        const ribbonAllowed = ['PATIENT_CARE', 'CRD', 'MANAGEMENT', 'HOSPITAL_RELATIONS', 'SUPERADMIN', 'ADMIN']
+        if (['SUPERADMIN', 'ADMIN'].includes(userRole) || ribbonAllowed.includes(userDept)) {
+          try {
+            const [obsRes, dcRes] = await Promise.allSettled([
+              safe('/api/observations?status=ACTIVE'),
+              safe('/api/daycare?status=CHECKED_IN'),
+            ])
+            if (signal.aborted) return
+            const obsData = obsRes.status === 'fulfilled' && obsRes.value.ok ? await obsRes.value.json() : []
+            const dcData = dcRes.status === 'fulfilled' && dcRes.value.ok ? await dcRes.value.json() : []
+            const admitted = Array.isArray(admissions) ? admissions.length : 0
+            const observation = Array.isArray(obsData) ? obsData.length : 0
+            const daycare = Array.isArray(dcData) ? dcData.length : 0
+            const totalActive = admitted + observation + daycare
+            const allCount = Array.isArray(patients) ? patients.length : 0
+            const outpatient = Math.max(0, allCount - totalActive)
+            // Critical = URGENT priority among active admissions
+            const critical = Array.isArray(admissions) ? admissions.filter(a => a.priority === 'URGENT' || a.acuity === 'CRITICAL').length : 0
+            if (!signal.aborted) setPatientRibbon({ admitted, observation, daycare, outpatient, critical, loaded: true })
+          } catch (_) {}
+        }
+
+        // Upgrade 2 — Low Stock Alert (pharmacy/clinical/admin roles)
+        const pharmacyAllowed = ['PATIENT_CARE', 'CRD', 'MANAGEMENT']
+        if (['SUPERADMIN', 'ADMIN'].includes(userRole) || pharmacyAllowed.includes(userDept)) {
+          try {
+            const pharmRes = await safe('/api/pharmacy')
+            if (pharmRes.ok && !signal.aborted) {
+              const items = await pharmRes.json()
+              const low = Array.isArray(items) ? items.filter(i => i.isLowStock) : []
+              if (!signal.aborted) setLowStockItems(low)
+            }
+          } catch (_) {}
+        }
       } finally {
-        setLoading(false)
+        if (!signal.aborted) setLoading(false)
       }
     }
     fetchData()
     // Load chart data separately
-    fetch('/api/reports/charts').then(r => r.ok ? r.json() : null).then(d => setChartData(d)).catch(() => {})
+    safe('/api/reports/charts').then(r => r.ok ? r.json() : null).then(d => { if (!signal.aborted) setChartData(d) }).catch(() => {})
 
-    // Upgrade 1 — Patient Status Ribbon (clinical roles only)
-    const ribbonAllowed = ['PATIENT_CARE', 'CRD', 'MANAGEMENT', 'HOSPITAL_RELATIONS', 'SUPERADMIN', 'ADMIN']
-    const userRole = session?.user?.role
-    const userDept = session?.user?.departmentCode
-    if (['SUPERADMIN','ADMIN'].includes(userRole) || ribbonAllowed.includes(userDept)) {
-      try {
-        const [admRes, obsRes, dcRes, allRes] = await Promise.allSettled([
-          fetch('/api/admissions?status=ADMITTED'),
-          fetch('/api/observations?status=ACTIVE'),
-          fetch('/api/daycare?status=CHECKED_IN'),
-          fetch('/api/patients'),
-        ])
-        const admData = admRes.status === 'fulfilled' && admRes.value.ok ? await admRes.value.json() : []
-        const obsData = obsRes.status === 'fulfilled' && obsRes.value.ok ? await obsRes.value.json() : []
-        const dcData = dcRes.status === 'fulfilled' && dcRes.value.ok ? await dcRes.value.json() : []
-        const allPats = allRes.status === 'fulfilled' && allRes.value.ok ? await allRes.value.json() : []
-        const admitted = Array.isArray(admData) ? admData.length : 0
-        const observation = Array.isArray(obsData) ? obsData.length : 0
-        const daycare = Array.isArray(dcData) ? dcData.length : 0
-        const totalActive = admitted + observation + daycare
-        const allCount = Array.isArray(allPats) ? allPats.length : 0
-        const outpatient = Math.max(0, allCount - totalActive)
-        // Critical = URGENT priority among active admissions
-        const critical = Array.isArray(admData) ? admData.filter(a => a.priority === 'URGENT' || a.acuity === 'CRITICAL').length : 0
-        setPatientRibbon({ admitted, observation, daycare, outpatient, critical, loaded: true })
-      } catch (_) {}
-    }
-
-    // Upgrade 2 — Low Stock Alert (pharmacy/clinical/admin roles)
-    const pharmacyAllowed = ['PATIENT_CARE', 'CRD', 'MANAGEMENT']
-    if (['SUPERADMIN','ADMIN'].includes(userRole) || pharmacyAllowed.includes(userDept)) {
-      try {
-        const pharmRes = await fetch('/api/pharmacy')
-        if (pharmRes.ok) {
-          const items = await pharmRes.json()
-          const low = Array.isArray(items) ? items.filter(i => i.isLowStock) : []
-          setLowStockItems(low)
-        }
-      } catch (_) {}
-    }
-  }, [session])
+    return () => controller.abort()
+  }, [userRole, userDept])
 
   const sortedDepts = [...departments].sort((a, b) => {
     const tA = HIERARCHY[a.code]?.tier ?? 99
@@ -277,7 +285,7 @@ export default function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
               </svg>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{loading ? <span className="text-gray-200">—</span> : stat_value(card.value)}</p>
+            <p className="text-3xl font-bold text-gray-900">{loading ? <span className="text-gray-200">—</span> : card.value}</p>
             <div className="flex items-center justify-between mt-0.5">
               <p className="text-xs text-gray-500">{card.label}</p>
               {card.overdue > 0 && !loading && (
@@ -405,4 +413,4 @@ export default function DashboardPage() {
   )
 }
 
-function stat_value(v) { return v }
+
