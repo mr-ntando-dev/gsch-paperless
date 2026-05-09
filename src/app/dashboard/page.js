@@ -44,6 +44,11 @@ export default function DashboardPage() {
   const [pendingRoutes, setPendingRoutes] = useState(0)
   const [loading, setLoading] = useState(true)
   const [chartData, setChartData] = useState(null)
+  // Upgrade 1 — Patient Status Ribbon
+  const [patientRibbon, setPatientRibbon] = useState({ admitted: 0, observation: 0, daycare: 0, outpatient: 0, critical: 0, loaded: false })
+  // Upgrade 2 — Low Stock Alert
+  const [lowStockItems, setLowStockItems] = useState([])
+  const [lowStockDismissed, setLowStockDismissed] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -85,7 +90,48 @@ export default function DashboardPage() {
     fetchData()
     // Load chart data separately
     fetch('/api/reports/charts').then(r => r.ok ? r.json() : null).then(d => setChartData(d)).catch(() => {})
-  }, [])
+
+    // Upgrade 1 — Patient Status Ribbon (clinical roles only)
+    const ribbonAllowed = ['PATIENT_CARE', 'CRD', 'MANAGEMENT', 'HOSPITAL_RELATIONS', 'SUPERADMIN', 'ADMIN']
+    const userRole = session?.user?.role
+    const userDept = session?.user?.departmentCode
+    if (['SUPERADMIN','ADMIN'].includes(userRole) || ribbonAllowed.includes(userDept)) {
+      try {
+        const [admRes, obsRes, dcRes, allRes] = await Promise.allSettled([
+          fetch('/api/admissions?status=ADMITTED'),
+          fetch('/api/observations?status=ACTIVE'),
+          fetch('/api/daycare?status=CHECKED_IN'),
+          fetch('/api/patients'),
+        ])
+        const admData = admRes.status === 'fulfilled' && admRes.value.ok ? await admRes.value.json() : []
+        const obsData = obsRes.status === 'fulfilled' && obsRes.value.ok ? await obsRes.value.json() : []
+        const dcData = dcRes.status === 'fulfilled' && dcRes.value.ok ? await dcRes.value.json() : []
+        const allPats = allRes.status === 'fulfilled' && allRes.value.ok ? await allRes.value.json() : []
+        const admitted = Array.isArray(admData) ? admData.length : 0
+        const observation = Array.isArray(obsData) ? obsData.length : 0
+        const daycare = Array.isArray(dcData) ? dcData.length : 0
+        const totalActive = admitted + observation + daycare
+        const allCount = Array.isArray(allPats) ? allPats.length : 0
+        const outpatient = Math.max(0, allCount - totalActive)
+        // Critical = URGENT priority among active admissions
+        const critical = Array.isArray(admData) ? admData.filter(a => a.priority === 'URGENT' || a.acuity === 'CRITICAL').length : 0
+        setPatientRibbon({ admitted, observation, daycare, outpatient, critical, loaded: true })
+      } catch (_) {}
+    }
+
+    // Upgrade 2 — Low Stock Alert (pharmacy/clinical/admin roles)
+    const pharmacyAllowed = ['PATIENT_CARE', 'CRD', 'MANAGEMENT']
+    if (['SUPERADMIN','ADMIN'].includes(userRole) || pharmacyAllowed.includes(userDept)) {
+      try {
+        const pharmRes = await fetch('/api/pharmacy')
+        if (pharmRes.ok) {
+          const items = await pharmRes.json()
+          const low = Array.isArray(items) ? items.filter(i => i.isLowStock) : []
+          setLowStockItems(low)
+        }
+      } catch (_) {}
+    }
+  }, [session])
 
   const sortedDepts = [...departments].sort((a, b) => {
     const tA = HIERARCHY[a.code]?.tier ?? 99
@@ -121,6 +167,64 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+
+      {/* ── Upgrade 2: Low Stock Alert Banner ─────────────────────────────── */}
+      {!lowStockDismissed && lowStockItems.length > 0 && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 shadow-sm">
+          <div className="flex-shrink-0 mt-0.5">
+            <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-800">
+              {lowStockItems.length} pharmacy item{lowStockItems.length > 1 ? 's' : ''} below reorder level
+            </p>
+            <p className="text-xs text-amber-700 mt-0.5 truncate">
+              {lowStockItems.slice(0, 5).map(i => `${i.name} (${i.stockLevel} ${i.unit})`).join(' · ')}
+              {lowStockItems.length > 5 && ` · +${lowStockItems.length - 5} more`}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <a href="/dashboard/pharmacy" className="text-xs font-semibold text-amber-700 hover:text-amber-900 underline underline-offset-2">
+              View pharmacy
+            </a>
+            <button onClick={() => setLowStockDismissed(true)} className="text-amber-500 hover:text-amber-700 transition-colors ml-1" title="Dismiss">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Upgrade 1: Patient Status Ribbon ──────────────────────────────── */}
+      {patientRibbon.loaded && isPatientCare && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {[
+            { label: 'Admitted', value: patientRibbon.admitted, bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', dot: 'bg-red-500', href: '/dashboard/admissions', pulse: true },
+            { label: 'Observation', value: patientRibbon.observation, bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', dot: 'bg-amber-500', href: '/dashboard/observations', pulse: false },
+            { label: 'Day Care', value: patientRibbon.daycare, bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', dot: 'bg-blue-500', href: '/dashboard/daycare', pulse: false },
+            { label: 'Outpatient', value: patientRibbon.outpatient, bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-600', dot: 'bg-gray-400', href: '/dashboard/patients', pulse: false },
+            { label: 'Critical', value: patientRibbon.critical, bg: patientRibbon.critical > 0 ? 'bg-rose-50' : 'bg-gray-50', border: patientRibbon.critical > 0 ? 'border-rose-300' : 'border-gray-200', text: patientRibbon.critical > 0 ? 'text-rose-700' : 'text-gray-400', dot: patientRibbon.critical > 0 ? 'bg-rose-600' : 'bg-gray-300', href: '/dashboard/admissions', pulse: patientRibbon.critical > 0 },
+          ].map(item => (
+            <a key={item.label} href={item.href}
+              className={`flex items-center gap-3 ${item.bg} border ${item.border} rounded-2xl px-4 py-3 hover:shadow-md transition-all group`}>
+              <div className="relative flex-shrink-0">
+                <div className={`w-2.5 h-2.5 rounded-full ${item.dot}`} />
+                {item.pulse && item.value > 0 && (
+                  <div className={`absolute inset-0 rounded-full ${item.dot} animate-ping opacity-60`} />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className={`text-2xl font-bold ${item.text} leading-none`}>{patientRibbon.loaded ? item.value : '—'}</p>
+                <p className={`text-[11px] font-medium ${item.text} opacity-80 mt-0.5 truncate`}>{item.label}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+
       {/* Welcome */}
       <div className="flex items-start justify-between">
         <div>
