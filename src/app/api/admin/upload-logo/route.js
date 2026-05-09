@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getSession, isSuperAdmin } from '@/lib/auth'
 
-export const config = { api: { bodyParser: false } }
-
 // POST /api/admin/upload-logo — SUPERADMIN only
 // Accepts multipart/form-data with a "logo" file field
 // Stores the image as a base64 data URL in the SiteSettings.logoUrl field
