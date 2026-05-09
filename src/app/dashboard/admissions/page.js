@@ -53,6 +53,63 @@ function AdmissionsContent() {
     } finally { setDischarging(false) }
   }
 
+  const printDischargeSummary = async (admission) => {
+    try {
+      const r = await fetch('/api/discharge-summary?admissionId=' + admission.id)
+      if (!r.ok) { toast.error('Could not load summary'); return }
+      const data = await r.json()
+      const { patient } = data.admission
+      const admitDate = new Date(data.admission.admitDate).toLocaleDateString('en-ZW')
+      const dischargeDate = data.admission.dischargeDate ? new Date(data.admission.dischargeDate).toLocaleDateString('en-ZW') : new Date().toLocaleDateString('en-ZW')
+      const medsRows = (data.medications || []).map(m => `<tr><td>${m.name}</td><td>${m.dose}</td><td>${m.route}</td><td>${m.frequency}</td><td>${m.prescribedBy}</td></tr>`).join('')
+      const win = window.open('', '_blank')
+      win.document.write(`<!DOCTYPE html><html><head><title>Discharge Summary</title><style>
+        body{font-family:Arial,sans-serif;padding:32px;max-width:700px;margin:0 auto;font-size:13px}
+        h1{color:#0d9488;font-size:20px;margin-bottom:4px} h2{font-size:14px;color:#374151;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin:20px 0 8px}
+        .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0d9488;padding-bottom:12px;margin-bottom:16px}
+        .badge{display:inline-block;background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:bold}
+        table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #f3f4f6}th{background:#f9fafb;font-weight:600;color:#6b7280}
+        .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin-bottom:12px}
+        .info-row{font-size:12px}.info-row span{color:#6b7280}
+        .allergy{background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;padding:6px 10px;color:#dc2626;font-size:12px;margin:8px 0}
+        .footer{margin-top:32px;border-top:1px solid #e5e7eb;padding-top:12px;font-size:11px;color:#9ca3af;display:flex;justify-content:space-between}
+        @media print{body{padding:16px}}
+      </style></head><body>
+        <div class="header">
+          <div><h1>Gweru Specialist Children&apos;s Hospital</h1><p style="color:#6b7280;margin:0;font-size:12px">Discharge Summary</p></div>
+          <div style="text-align:right"><span class="badge">DISCHARGED</span><p style="font-size:11px;color:#6b7280;margin:4px 0 0">${dischargeDate}</p></div>
+        </div>
+        <h2>Patient Information</h2>
+        <div class="info-grid">
+          <div class="info-row"><span>Full Name: </span><strong>${patient.firstName} ${patient.lastName}</strong></div>
+          <div class="info-row"><span>Patient ID: </span><strong>${patient.patientId}</strong></div>
+          <div class="info-row"><span>Date of Birth: </span>${new Date(patient.dateOfBirth).toLocaleDateString('en-ZW')}</div>
+          <div class="info-row"><span>Blood Type: </span>${patient.bloodType || 'Unknown'}</div>
+          <div class="info-row"><span>Guardian: </span>${patient.guardianName}</div>
+          <div class="info-row"><span>Phone: </span>${patient.guardianPhone}</div>
+        </div>
+        ${patient.allergies ? `<div class="allergy">⚠ Allergies: ${patient.allergies}</div>` : ''}
+        <h2>Admission Details</h2>
+        <div class="info-grid">
+          <div class="info-row"><span>Admitted: </span><strong>${admitDate}</strong></div>
+          <div class="info-row"><span>Discharged: </span><strong>${dischargeDate}</strong></div>
+          <div class="info-row"><span>Ward: </span>${data.admission.ward}${data.admission.bed ? ` / Bed ${data.admission.bed}` : ''}</div>
+          <div class="info-row"><span>Doctor: </span>Dr. ${data.admission.doctor}</div>
+        </div>
+        ${data.admission.diagnosis ? `<p><strong>Diagnosis:</strong> ${data.admission.diagnosis}</p>` : ''}
+        ${data.admission.notes ? `<p><strong>Clinical Notes:</strong> ${data.admission.notes}</p>` : ''}
+        ${data.admission.dietaryNotes ? `<p><strong>Dietary Notes:</strong> ${data.admission.dietaryNotes}</p>` : ''}
+        ${medsRows ? `<h2>Medications During Admission</h2><table><thead><tr><th>Drug</th><th>Dose</th><th>Route</th><th>Frequency</th><th>Prescribed By</th></tr></thead><tbody>${medsRows}</tbody></table>` : ''}
+        <div class="footer">
+          <span>Gweru Specialist Children&apos;s Hospital · MediFile System</span>
+          <span>Printed: ${new Date().toLocaleString('en-ZW')}</span>
+        </div>
+        <script>window.onload=function(){window.print()}<\/script>
+      </body></html>`)
+      win.document.close()
+    } catch { toast.error('Failed to generate summary') }
+  }
+
   const daysAdmitted = (admitDate) => {
     const days = Math.floor((new Date() - new Date(admitDate)) / (1000 * 60 * 60 * 24))
     if (days === 0) return 'Admitted today'
@@ -126,6 +183,7 @@ function AdmissionsContent() {
                         <div className="flex gap-2">
                           <button onClick={(e)=>{e.stopPropagation();handleDischarge(a)}} disabled={discharging} className="btn-secondary text-xs text-green-700 border-green-200 hover:bg-green-50">Discharge Patient</button>
                           <button onClick={(e)=>{e.stopPropagation();}} className="btn-secondary text-xs">Transfer</button>
+                          <button onClick={(e)=>{e.stopPropagation();printDischargeSummary(a)}} className="btn-secondary text-xs text-blue-700 border-blue-200 hover:bg-blue-50">Print Summary</button>
                         </div>
                       )}
                     </div>

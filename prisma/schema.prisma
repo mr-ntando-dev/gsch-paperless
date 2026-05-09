@@ -84,6 +84,7 @@ model User {
   deptNotices     DeptNotice[]
   sentRoutes      DocumentRoute[]  @relation("SentRoutes")
   escalations     TaskEscalation[] @relation("EscalatedByUser")
+  shifts          ShiftRoster[]
 }
 
 model Document {
@@ -205,6 +206,8 @@ model Patient {
   address       String?
   gender        String      @default("UNKNOWN")
   bloodType     String?
+  medications   Medication[]
+  appointments  Appointment[]
   allergies     String?
   medicalHistory Json?
   careType      String      @default("OUTPATIENT") // ADMITTED | OBSERVATION | DAYCARE | OUTPATIENT
@@ -467,4 +470,87 @@ model BabyClinicVisit {
 
 // --- Notifications (wire up existing model) ---
 // Already exists as Notification model above — no change needed
+
+// ===================== NEW MODELS =====================
+
+model Medication {
+  id           String    @id @default(cuid())
+  patientId    String
+  patient      Patient   @relation(fields: [patientId], references: [id])
+  name         String
+  dose         String
+  route        String    @default("ORAL") // ORAL | IV | IM | TOPICAL | INHALED | RECTAL | NASAL
+  frequency    String    // e.g. "8 hourly", "BD", "OD"
+  startDate    DateTime  @default(now())
+  endDate      DateTime?
+  prescribedBy String
+  status       String    @default("ACTIVE") // ACTIVE | STOPPED | COMPLETED
+  notes        String?   @db.Text
+  administrations MedicationAdmin[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model MedicationAdmin {
+  id           String     @id @default(cuid())
+  medicationId String
+  medication   Medication @relation(fields: [medicationId], references: [id])
+  givenAt      DateTime   @default(now())
+  givenBy      String
+  dose         String?
+  notes        String?
+  createdAt    DateTime   @default(now())
+}
+
+model Appointment {
+  id          String    @id @default(cuid())
+  patientId   String?
+  patient     Patient?  @relation(fields: [patientId], references: [id])
+  patientName String?
+  guardianPhone String?
+  doctor      String
+  department  String
+  date        String
+  time        String
+  duration    Int       @default(30) // minutes
+  type        String    @default("OUTPATIENT") // OUTPATIENT | FOLLOW_UP | PROCEDURE | CONSULTATION
+  status      String    @default("SCHEDULED") // SCHEDULED | CONFIRMED | COMPLETED | CANCELLED | NO_SHOW
+  reason      String?
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ShiftRoster {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  date        String
+  shiftType   String    @default("DAY") // DAY | NIGHT | ON_CALL
+  startTime   String
+  endTime     String
+  department  String
+  status      String    @default("SCHEDULED") // SCHEDULED | ACTIVE | COMPLETED | ABSENT
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Vaccination {
+  id          String   @id @default(cuid())
+  babyName    String
+  dob         String
+  parentName  String
+  parentPhone String
+  vaccine     String
+  dose        String   @default("1st")
+  batchNo     String?
+  site        String?  // e.g. "Left thigh"
+  givenBy     String
+  givenDate   String
+  nextDueDate String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
 

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import MiniBarChart from '@/components/MiniBarChart'
 
 const HIERARCHY = {
   MANAGEMENT: { tier: 1, label: 'Executive', dot: '#475569' },
@@ -41,6 +42,7 @@ export default function DashboardPage() {
   const [departments, setDepartments] = useState([])
   const [pendingRoutes, setPendingRoutes] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [chartData, setChartData] = useState(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,6 +78,8 @@ export default function DashboardPage() {
       }
     }
     fetchData()
+    // Load chart data separately
+    fetch('/api/reports/charts').then(r => r.ok ? r.json() : null).then(d => setChartData(d)).catch(() => {})
   }, [])
 
   const sortedDepts = [...departments].sort((a, b) => {
@@ -148,6 +152,66 @@ export default function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      {/* New feature quick links */}
+      {isPatientCare && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'Medications', href: '/dashboard/medications', color: 'bg-teal-500', icon: 'M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 1-6.23-.693L5 14.5m14.8.8 1.402 1.402c1 1 .03 2.698-1.414 2.698H4.213c-1.444 0-2.414-1.698-1.414-2.698L4.2 15.3' },
+            { label: 'Appointments', href: '/dashboard/appointments', color: 'bg-blue-500', icon: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5' },
+            { label: 'Vaccinations', href: '/dashboard/vaccinations', color: 'bg-pink-500', icon: 'M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z' },
+            { label: 'Shift Roster', href: '/dashboard/shifts', color: 'bg-indigo-500', icon: 'M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z' },
+          ].map(item => (
+            <Link key={item.href} href={item.href} className="bg-white rounded-2xl border border-gray-100 p-4 hover:shadow-md transition-all group flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-xl ${item.color} flex items-center justify-center flex-shrink-0`}>
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d={item.icon} /></svg>
+              </div>
+              <span className="text-sm font-semibold text-gray-700 group-hover:text-primary-700 transition-colors">{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* Charts */}
+      {chartData && isPatientCare && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Admissions — Last 7 Days</p>
+            <p className="text-2xl font-bold text-gray-800 mb-3">{chartData.admissionsTrend?.data?.reduce((a, b) => a + b, 0) || 0} total</p>
+            <MiniBarChart data={chartData.admissionsTrend?.data || []} labels={chartData.admissionsTrend?.labels || []} color="#0d9488" height={56} />
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Patients by Type</p>
+            <div className="space-y-2">
+              {[
+                { label: 'Admitted', value: chartData.patientsByType?.admitted || 0, color: 'bg-red-400' },
+                { label: 'Observation', value: chartData.patientsByType?.observation || 0, color: 'bg-amber-400' },
+                { label: 'Day Care', value: chartData.patientsByType?.daycare || 0, color: 'bg-blue-400' },
+                { label: 'Outpatient', value: chartData.patientsByType?.outpatient || 0, color: 'bg-gray-300' },
+              ].map(row => {
+                const total = (chartData.patientsByType?.admitted || 0) + (chartData.patientsByType?.observation || 0) + (chartData.patientsByType?.daycare || 0) + (chartData.patientsByType?.outpatient || 0)
+                const pct = total > 0 ? Math.round((row.value / total) * 100) : 0
+                return (
+                  <div key={row.label}>
+                    <div className="flex justify-between text-xs mb-0.5"><span className="text-gray-600">{row.label}</span><span className="font-semibold text-gray-800">{row.value}</span></div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5"><div className={`${row.color} h-1.5 rounded-full transition-all`} style={{ width: pct + '%' }} /></div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Active Medications</p>
+            <div className="flex items-end gap-4">
+              <div><p className="text-3xl font-bold text-teal-600">{chartData.medications?.active || 0}</p><p className="text-xs text-gray-400">Active</p></div>
+              <div><p className="text-xl font-bold text-gray-400">{chartData.medications?.stopped || 0}</p><p className="text-xs text-gray-400">Stopped/Done</p></div>
+            </div>
+            <div className="mt-3 flex items-center gap-2">
+              <Link href="/dashboard/medications" className="text-xs text-primary-600 hover:text-primary-700 font-medium">Manage medications →</Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Departments with hierarchy */}
       <div>

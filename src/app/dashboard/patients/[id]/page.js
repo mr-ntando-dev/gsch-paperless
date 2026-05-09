@@ -81,9 +81,31 @@ export default function PatientHistoryPage() {
             ))}
           </div>
 
-          <div className="pt-2 flex gap-2">
+          <div className="pt-2 flex gap-2 flex-wrap">
             <Link href={`/dashboard/admissions?patient=${patient.id}`} className="btn-secondary text-xs flex-1 text-center">Admit</Link>
             <Link href={`/dashboard/invoices?patient=${patient.id}`} className="btn-secondary text-xs flex-1 text-center">Invoice</Link>
+            <Link href={`/dashboard/medications?patientId=${patient.id}`} className="btn-secondary text-xs flex-1 text-center">Meds</Link>
+          </div>
+          {/* QR Wristband */}
+          <div className="pt-2">
+            <button onClick={() => {
+              const win = window.open('', '_blank', 'width=400,height=300')
+              win.document.write(`<!DOCTYPE html><html><head><title>Wristband - ${patient.firstName} ${patient.lastName}</title><script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script></head><body style="font-family:sans-serif;padding:16px;max-width:350px;margin:0 auto">
+<h3 style="font-size:13px;margin:0 0 4px">${patient.firstName} ${patient.lastName}</h3>
+<p style="font-size:11px;color:#666;margin:0 0 2px">ID: ${patient.patientId}</p>
+<p style="font-size:11px;color:#666;margin:0 0 8px">DOB: ${new Date(patient.dateOfBirth).toLocaleDateString()}</p>
+${patient.bloodType ? `<p style="font-size:11px;font-weight:bold;color:#dc2626;margin:0 0 8px">Blood: ${patient.bloodType}</p>` : ''}
+${patient.allergies ? `<p style="font-size:10px;background:#fee2e2;padding:4px 8px;border-radius:4px;color:#dc2626;margin:0 0 8px">Allergies: ${patient.allergies}</p>` : ''}
+<canvas id="qr"></canvas>
+<p style="font-size:9px;color:#999;margin-top:4px">Scan to open full record</p>
+<script>QRCode.toCanvas(document.getElementById('qr'),'${window.location.origin}/dashboard/patients/${patient.id}',{width:120,margin:1},function(){})<\/script>
+<script>window.onload=function(){window.print()}<\/script>
+</body></html>`)
+              win.document.close()
+            }} className="w-full btn-secondary text-xs flex items-center justify-center gap-1.5">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z" /></svg>
+              Print Wristband QR
+            </button>
           </div>
         </div>
 
