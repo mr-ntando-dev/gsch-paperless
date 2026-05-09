@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { notifyDept } from '@/lib/notify'
 
 export async function GET(request) {
   try {
@@ -87,6 +88,16 @@ export async function POST(request) {
         details: { note, toDeptId, fromDeptId },
       }
     }).catch(() => {})
+
+    // Notify all users in the receiving department
+    await notifyDept({
+      departmentId: toDeptId,
+      excludeUserId: session.user.id,
+      title: 'Document routed to your department',
+      message: `"${route.document.title}" was routed to ${route.toDept.name} by ${session.user.name} (${route.fromDept.name}).${note ? ` Note: ${note}` : ''}`,
+      type: 'DOCUMENT',
+      link: '/dashboard/documents',
+    })
 
     return NextResponse.json(route, { status: 201 })
   } catch (error) {

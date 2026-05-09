@@ -39,6 +39,7 @@ const STAT_ICONS = {
 export default function DashboardPage() {
   const { data: session } = useSession()
   const [stats, setStats] = useState({ documents: 0, tasks: 0, maintenance: 0, forms: 0, patients: 0, admissions: 0, invoices: 0, assets: 0 })
+  const [overdueTasks, setOverdueTasks] = useState(0)
   const [departments, setDepartments] = useState([])
   const [pendingRoutes, setPendingRoutes] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -71,6 +72,10 @@ export default function DashboardPage() {
         const assets = assetsRes.status === 'fulfilled' && assetsRes.value.ok ? await assetsRes.value.json() : []
 
         setStats({ documents: Array.isArray(docs) ? docs.length : 0, tasks: Array.isArray(tasks) ? tasks.length : 0, maintenance: Array.isArray(maint) ? maint.length : 0, forms: Array.isArray(forms) ? forms.length : 0, patients: Array.isArray(patients) ? patients.length : 0, admissions: Array.isArray(admissions) ? admissions.length : 0, invoices: Array.isArray(invoices) ? invoices.length : 0, assets: Array.isArray(assets) ? assets.length : 0 })
+        // Count overdue tasks (due date in past, not DONE)
+        const now = new Date()
+        const overdueCount = Array.isArray(tasks) ? tasks.filter(t => t.dueDate && new Date(t.dueDate) < now && t.status !== 'DONE').length : 0
+        setOverdueTasks(overdueCount)
         setDepartments(Array.isArray(depts) ? depts.filter(d => d.isActive) : [])
         setPendingRoutes(Array.isArray(routes) ? routes.filter(r => r.status === 'PENDING').length : 0)
       } finally {
@@ -100,7 +105,7 @@ export default function DashboardPage() {
 
   const allStatCards = [
     { label: 'Documents', value: stats.documents, href: '/dashboard/documents', color: 'bg-blue-500', icon: STAT_ICONS.Documents, show: true },
-    { label: 'Active Tasks', value: stats.tasks, href: '/dashboard/tasks', color: 'bg-emerald-500', icon: STAT_ICONS.Tasks, show: true },
+    { label: 'Active Tasks', value: stats.tasks, href: '/dashboard/tasks', color: 'bg-emerald-500', icon: STAT_ICONS.Tasks, show: true, overdue: overdueTasks },
     { label: 'Patients', value: stats.patients, href: '/dashboard/patients', color: 'bg-teal-500', icon: 'M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0', show: isPatientCare },
     { label: 'Admitted', value: stats.admissions, href: '/dashboard/admissions', color: 'bg-red-500', icon: 'M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.068.157 2.148.279 3.238.364.466.037.893.281 1.153.671L12 21l2.652-3.978c.26-.39.687-.634 1.153-.67 1.09-.086 2.17-.208 3.238-.365 1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z', show: isPatientCare },
     { label: 'Unpaid Invoices', value: stats.invoices, href: '/dashboard/invoices', color: 'bg-orange-500', icon: 'M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z', show: isBilling },
@@ -132,6 +137,27 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* Overdue tasks alert */}
+      {overdueTasks > 0 && (
+        <Link href="/dashboard/tasks"
+          className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl px-5 py-3.5 hover:bg-red-100 transition-colors">
+          <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+            <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-red-800">
+              {overdueTasks} overdue task{overdueTasks > 1 ? 's' : ''} need your attention
+            </p>
+            <p className="text-xs text-red-500">Click to view and action them</p>
+          </div>
+          <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+          </svg>
+        </Link>
+      )}
+
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map(card => (
@@ -148,7 +174,14 @@ export default function DashboardPage() {
               </svg>
             </div>
             <p className="text-3xl font-bold text-gray-900">{loading ? <span className="text-gray-200">—</span> : stat_value(card.value)}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{card.label}</p>
+            <div className="flex items-center justify-between mt-0.5">
+              <p className="text-xs text-gray-500">{card.label}</p>
+              {card.overdue > 0 && !loading && (
+                <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full">
+                  {card.overdue} overdue
+                </span>
+              )}
+            </div>
           </Link>
         ))}
       </div>

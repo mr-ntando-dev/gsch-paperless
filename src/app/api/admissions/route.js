@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { notifyDept } from '@/lib/notify'
 
 export async function GET(request) {
   try {
@@ -32,6 +33,20 @@ export async function POST(request) {
       include: { patient: true },
     })
     await prisma.patient.update({ where: { id: patientId }, data: { careType: 'ADMITTED' } })
+
+    // Notify Patient Care department
+    const patientCareDept = await prisma.departmentModel.findFirst({ where: { code: 'PATIENT_CARE', isActive: true } })
+    if (patientCareDept) {
+      await notifyDept({
+        departmentId: patientCareDept.id,
+        excludeUserId: session.user.id,
+        title: 'New patient admitted',
+        message: `${admission.patient.firstName} ${admission.patient.lastName} (${admission.patient.patientId}) admitted to ${ward}${bed ? `, Bed ${bed}` : ''} under Dr. ${doctor}.`,
+        type: 'PATIENT',
+        link: '/dashboard/admissions',
+      })
+    }
+
     return NextResponse.json(admission, { status: 201 })
   } catch (e) {
     console.error(e)
@@ -52,6 +67,19 @@ export async function PATCH(request) {
     })
     if (status === 'DISCHARGED') {
       await prisma.patient.update({ where: { id: admission.patientId }, data: { careType: 'OUTPATIENT' } })
+
+      // Notify dept of discharge
+      const patientCareDept = await prisma.departmentModel.findFirst({ where: { code: 'PATIENT_CARE', isActive: true } })
+      if (patientCareDept) {
+        await notifyDept({
+          departmentId: patientCareDept.id,
+          excludeUserId: session.user.id,
+          title: 'Patient discharged',
+          message: `${admission.patient.firstName} ${admission.patient.lastName} (${admission.patient.patientId}) has been discharged.`,
+          type: 'PATIENT',
+          link: '/dashboard/admissions',
+        })
+      }
     }
     return NextResponse.json(admission)
   } catch (e) {

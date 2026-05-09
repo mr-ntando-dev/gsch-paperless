@@ -280,6 +280,13 @@ export default function Sidebar() {
             {!collapsed && <span>System Admin</span>}
           </Link>
         )}
+        <Link href="/dashboard/profile" title={collapsed ? 'My Profile' : undefined}
+          className={`flex items-center gap-3 px-2.5 py-2 rounded-xl transition-all text-sm ${
+            pathname === '/dashboard/profile' ? 'bg-primary-600 text-white font-medium shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+          }`}>
+          <NavIcon path="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+          {!collapsed && <span>My Profile</span>}
+        </Link>
         <button onClick={() => signOut({ callbackUrl: '/login' })}
           className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-all">
           <svg className="w-[18px] h-[18px] flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
@@ -287,7 +294,6 @@ export default function Sidebar() {
           </svg>
           {!collapsed && <span>Sign out</span>}
         </button>
-      </div>
     </aside>
   )
 }

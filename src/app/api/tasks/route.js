@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { notify } from '@/lib/notify'
 
 export async function GET(request) {
   try {
@@ -52,6 +53,17 @@ export async function POST(request) {
         creatorId: session.user.id,
       },
     })
+
+    // Notify assignee (if different from creator)
+    if (assigneeId && assigneeId !== session.user.id) {
+      await notify({
+        userId: assigneeId,
+        title: 'New task assigned to you',
+        message: `"${title}" was assigned to you by ${session.user.name}${dueDate ? ` — due ${new Date(dueDate).toLocaleDateString('en-ZW')}` : ''}.`,
+        type: 'TASK',
+        link: '/dashboard/tasks',
+      })
+    }
 
     return NextResponse.json(task, { status: 201 })
   } catch (error) {

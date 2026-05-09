@@ -53,7 +53,7 @@ function AdmissionsContent() {
     } finally { setDischarging(false) }
   }
 
-  const printDischargeSummary = async (admission) => {
+  const printDischargeSummary = async (admission, download = false) => {
     try {
       const r = await fetch('/api/discharge-summary?admissionId=' + admission.id)
       if (!r.ok) { toast.error('Could not load summary'); return }
@@ -63,7 +63,7 @@ function AdmissionsContent() {
       const dischargeDate = data.admission.dischargeDate ? new Date(data.admission.dischargeDate).toLocaleDateString('en-ZW') : new Date().toLocaleDateString('en-ZW')
       const medsRows = (data.medications || []).map(m => `<tr><td>${m.name}</td><td>${m.dose}</td><td>${m.route}</td><td>${m.frequency}</td><td>${m.prescribedBy}</td></tr>`).join('')
       const win = window.open('', '_blank')
-      win.document.write(`<!DOCTYPE html><html><head><title>Discharge Summary</title><style>
+      win.document.write(`<!DOCTYPE html><html><head><title>Discharge Summary — ${patient.firstName} ${patient.lastName}</title><style>
         body{font-family:Arial,sans-serif;padding:32px;max-width:700px;margin:0 auto;font-size:13px}
         h1{color:#0d9488;font-size:20px;margin-bottom:4px} h2{font-size:14px;color:#374151;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin:20px 0 8px}
         .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0d9488;padding-bottom:12px;margin-bottom:16px}
@@ -73,10 +73,17 @@ function AdmissionsContent() {
         .info-row{font-size:12px}.info-row span{color:#6b7280}
         .allergy{background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;padding:6px 10px;color:#dc2626;font-size:12px;margin:8px 0}
         .footer{margin-top:32px;border-top:1px solid #e5e7eb;padding-top:12px;font-size:11px;color:#9ca3af;display:flex;justify-content:space-between}
-        @media print{body{padding:16px}}
+        .no-print{position:fixed;top:16px;right:16px;display:flex;gap:8px}
+        .btn{padding:8px 16px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
+        .btn-print{background:#0d9488;color:#fff}.btn-close{background:#f3f4f6;color:#374151}
+        @media print{body{padding:16px}.no-print{display:none!important}}
       </style></head><body>
+        <div class="no-print">
+          <button class="btn btn-print" onclick="window.print()">🖨 Print / Save PDF</button>
+          <button class="btn btn-close" onclick="window.close()">Close</button>
+        </div>
         <div class="header">
-          <div><h1>Gweru Specialist Children&apos;s Hospital</h1><p style="color:#6b7280;margin:0;font-size:12px">Discharge Summary</p></div>
+          <div><h1>Gweru Specialist Children's Hospital</h1><p style="color:#6b7280;margin:0;font-size:12px">Discharge Summary</p></div>
           <div style="text-align:right"><span class="badge">DISCHARGED</span><p style="font-size:11px;color:#6b7280;margin:4px 0 0">${dischargeDate}</p></div>
         </div>
         <h2>Patient Information</h2>
@@ -101,10 +108,10 @@ function AdmissionsContent() {
         ${data.admission.dietaryNotes ? `<p><strong>Dietary Notes:</strong> ${data.admission.dietaryNotes}</p>` : ''}
         ${medsRows ? `<h2>Medications During Admission</h2><table><thead><tr><th>Drug</th><th>Dose</th><th>Route</th><th>Frequency</th><th>Prescribed By</th></tr></thead><tbody>${medsRows}</tbody></table>` : ''}
         <div class="footer">
-          <span>Gweru Specialist Children&apos;s Hospital · MediFile System</span>
+          <span>Gweru Specialist Children's Hospital · MediFile System</span>
           <span>Printed: ${new Date().toLocaleString('en-ZW')}</span>
         </div>
-        <script>window.onload=function(){window.print()}<\/script>
+        ${download ? '<script>window.onload=function(){window.print()}<\/script>' : ''}
       </body></html>`)
       win.document.close()
     } catch { toast.error('Failed to generate summary') }
@@ -183,7 +190,8 @@ function AdmissionsContent() {
                         <div className="flex gap-2">
                           <button onClick={(e)=>{e.stopPropagation();handleDischarge(a)}} disabled={discharging} className="btn-secondary text-xs text-green-700 border-green-200 hover:bg-green-50">Discharge Patient</button>
                           <button onClick={(e)=>{e.stopPropagation();}} className="btn-secondary text-xs">Transfer</button>
-                          <button onClick={(e)=>{e.stopPropagation();printDischargeSummary(a)}} className="btn-secondary text-xs text-blue-700 border-blue-200 hover:bg-blue-50">Print Summary</button>
+                          <button onClick={(e)=>{e.stopPropagation();printDischargeSummary(a)}} className="btn-secondary text-xs text-blue-700 border-blue-200 hover:bg-blue-50">📄 View Summary</button>
+                          <button onClick={(e)=>{e.stopPropagation();printDischargeSummary(a, true)}} className="btn-secondary text-xs text-teal-700 border-teal-200 hover:bg-teal-50">⬇ Download PDF</button>
                         </div>
                       )}
                     </div>
