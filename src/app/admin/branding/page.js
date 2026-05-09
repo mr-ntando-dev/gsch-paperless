@@ -3,11 +3,14 @@ import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
 
 export default function AdminBrandingPage() {
-  const [settings, setSettings] = useState({ siteName: 'MediFile', logoUrl: null })
+  const [settings, setSettings] = useState({ siteName: 'MediFile', logoUrl: null, hospitalName: '', tagline: '', footerText: '' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [siteName, setSiteName] = useState('')
+  const [hospitalName, setHospitalName] = useState('')
+  const [tagline, setTagline] = useState('')
+  const [footerText, setFooterText] = useState('')
   const [preview, setPreview] = useState(null)
   const fileRef = useRef(null)
 
@@ -18,6 +21,9 @@ export default function AdminBrandingPage() {
         const data = await res.json()
         setSettings(data)
         setSiteName(data.siteName || 'MediFile')
+        setHospitalName(data.hospitalName || '')
+        setTagline(data.tagline || '')
+        setFooterText(data.footerText || '')
         setPreview(data.logoUrl || null)
       }
     } finally {
@@ -41,6 +47,28 @@ export default function AdminBrandingPage() {
         const data = await res.json()
         setSettings(data)
         toast.success('Site name updated! Refresh any open pages to see the change.')
+      } else {
+        const d = await res.json()
+        toast.error(d.error || 'Failed to update')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSaveBranding = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const res = await fetch('/api/admin/site-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hospitalName, tagline, footerText }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setSettings(data)
+        toast.success('Branding updated! Refresh other pages to see changes.')
       } else {
         const d = await res.json()
         toast.error(d.error || 'Failed to update')
@@ -161,6 +189,29 @@ export default function AdminBrandingPage() {
             className="px-5 py-2 bg-red-700 hover:bg-red-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
           >
             {saving ? 'Saving...' : 'Save Name'}
+          </button>
+        </form>
+      </div>
+
+      {/* Logo Upload */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h3 className="text-white font-semibold mb-1">Hospital Identity</h3>
+        <p className="text-gray-500 text-xs mb-4">Shown on the login page, splash screen, and footer. Clear fields to remove branding.</p>
+        <form onSubmit={handleSaveBranding} className="space-y-4">
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Hospital / Organisation Name</label>
+            <input type="text" value={hospitalName} onChange={e => setHospitalName(e.target.value)} maxLength={100} placeholder="e.g. Gweru Specialist Children's Hospital" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500 placeholder:text-gray-600" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Tagline</label>
+            <input type="text" value={tagline} onChange={e => setTagline(e.target.value)} maxLength={80} placeholder="e.g. Digital Record System" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500 placeholder:text-gray-600" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Footer Text</label>
+            <input type="text" value={footerText} onChange={e => setFooterText(e.target.value)} maxLength={120} placeholder="e.g. © 2026 Your Hospital Name" className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500 placeholder:text-gray-600" />
+          </div>
+          <button type="submit" disabled={saving} className="px-5 py-2 bg-red-700 hover:bg-red-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors">
+            {saving ? 'Saving...' : 'Save Branding'}
           </button>
         </form>
       </div>

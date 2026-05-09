@@ -77,7 +77,7 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const [departments, setDepartments] = useState([])
   const [deptOpen, setDeptOpen] = useState(true)
-  const [siteSettings, setSiteSettings] = useState({ siteName: 'GSCH MediFile', logoUrl: null })
+  const [siteSettings, setSiteSettings] = useState({ siteName: 'MediFile', logoUrl: null })
   const pathname = usePathname()
   const { data: session } = useSession()
   const userRole = session?.user?.role
@@ -89,7 +89,7 @@ export default function Sidebar() {
       .then(d => setDepartments(Array.isArray(d) ? d.filter(x => x.isActive) : []))
       .catch(() => {})
     fetch('/api/admin/site-settings')
-      .then(r => r.ok ? r.json() : { siteName: 'GSCH MediFile', logoUrl: null })
+      .then(r => r.ok ? r.json() : { siteName: 'MediFile', logoUrl: null })
       .then(d => setSiteSettings(d))
       .catch(() => {})
   }, [])
@@ -130,12 +130,12 @@ export default function Sidebar() {
           {siteSettings.logoUrl ? (
             <img src={siteSettings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
           ) : (
-            <Image src="/logo.png" alt="GSCH" width={28} height={28} />
+            <Image src="/logo.png" alt="Logo" width={28} height={28} />
           )}
         </div>
         {!collapsed && (
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-gray-900 text-sm leading-tight truncate">{siteSettings.siteName || 'GSCH MediFile'}</p>
+            <p className="font-bold text-gray-900 text-sm leading-tight truncate">{siteSettings.siteName || 'MediFile'}</p>
             <p className="text-[10px] text-gray-400">Digital Records System</p>
           </div>
         )}

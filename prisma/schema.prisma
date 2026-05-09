@@ -32,10 +32,13 @@ enum Priority {
 }
 
 model SiteSettings {
-  id        String   @id @default("singleton")
-  siteName  String   @default("MediFile")
-  logoUrl   String?
-  updatedAt DateTime @updatedAt
+  id           String   @id @default("singleton")
+  siteName     String   @default("MediFile")
+  logoUrl      String?
+  hospitalName String   @default("Gweru Specialist Children's Hospital")
+  tagline      String   @default("Digital Record System")
+  footerText   String   @default("© 2026 Gweru Specialist Children's Hospital")
+  updatedAt    DateTime @updatedAt
 
   @@map("site_settings")
 }

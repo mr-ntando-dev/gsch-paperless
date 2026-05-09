@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -9,7 +9,15 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [brand, setBrand] = useState({ siteName: 'MediFile', hospitalName: '', tagline: 'Digital Record System', logoUrl: null, footerText: '' })
   const router = useRouter()
+
+  useEffect(() => {
+    fetch('/api/admin/site-settings')
+      .then(r => r.ok ? r.json() : {})
+      .then(d => setBrand(b => ({ ...b, ...d })))
+      .catch(() => {})
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -22,21 +30,25 @@ export default function LoginPage() {
     finally { setLoading(false) }
   }
 
+  const logoSrc = brand.logoUrl || '/logo.png'
+  const displayName = brand.siteName || 'MediFile'
+  const hospitalName = brand.hospitalName || ''
+  const footerText = brand.footerText || `\u00A9 ${new Date().getFullYear()} ${hospitalName || displayName}`
+
   return (
     <div className="min-h-screen flex bg-gray-50">
       {/* Left panel - branding */}
       <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-primary-700 via-primary-800 to-slate-900 flex-col items-center justify-center p-16 relative overflow-hidden">
-        {/* Background pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-96 h-96 rounded-full bg-white blur-3xl" />
           <div className="absolute bottom-20 right-20 w-64 h-64 rounded-full bg-primary-300 blur-2xl" />
         </div>
         <div className="relative z-10 text-center">
           <div className="w-24 h-24 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center mx-auto mb-6 shadow-2xl border border-white/20 overflow-hidden">
-            <Image src="/logo.png" alt="GSCH" width={80} height={80} />
+            <Image src={logoSrc} alt={displayName} width={80} height={80} />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2 leading-tight">GSCH MediFile</h1>
-          <p className="text-primary-300 text-lg">Gweru Specialist Children's Hospital</p>
+          <h1 className="text-4xl font-bold text-white mb-2 leading-tight">{displayName}</h1>
+          {hospitalName && <p className="text-primary-300 text-lg">{hospitalName}</p>}
           <div className="mt-10 space-y-3 text-left">
             {[
               { label: 'Paperless Records', desc: 'All hospital documents digitised' },
@@ -57,7 +69,7 @@ export default function LoginPage() {
             ))}
           </div>
         </div>
-        <p className="absolute bottom-6 text-primary-400 text-xs">© 2026 Gweru Specialist Children's Hospital</p>
+        <p className="absolute bottom-6 text-primary-400 text-xs">{footerText}</p>
       </div>
 
       {/* Right panel - login form */}
@@ -66,9 +78,9 @@ export default function LoginPage() {
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <div className="w-16 h-16 rounded-2xl bg-primary-600 flex items-center justify-center mx-auto mb-3 overflow-hidden">
-              <Image src="/logo.png" alt="GSCH" width={56} height={56} />
+              <Image src={logoSrc} alt={displayName} width={56} height={56} />
             </div>
-            <h1 className="text-xl font-bold text-gray-900">GSCH MediFile</h1>
+            <h1 className="text-xl font-bold text-gray-900">{displayName}</h1>
           </div>
 
           <div>
@@ -80,7 +92,7 @@ export default function LoginPage() {
                 <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">Email Address</label>
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-200 focus:border-primary-300 outline-none transition-all"
-                  placeholder="your.name@gsch.co.zw" required autoComplete="email" />
+                  placeholder="your.name@hospital.com" required autoComplete="email" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">Password</label>
@@ -98,13 +110,8 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <p className="text-xs text-gray-500 text-center">Account access is managed by your administrator.</p>
-              <p className="text-xs text-gray-400 text-center mt-0.5">Contact IT or Management for login issues.</p>
-            </div>
+            <p className="text-center text-xs text-gray-300 mt-8">{footerText} &middot; {displayName}</p>
           </div>
-
-          <p className="text-center text-xs text-gray-300 mt-8">© 2026 Gweru Specialist Children's Hospital · MediFile v2</p>
         </div>
       </div>
     </div>

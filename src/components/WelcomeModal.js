@@ -102,7 +102,7 @@ export default function WelcomeModal() {
     }
     return {
       headline: `Welcome, ${firstName}! 👋`,
-      sub: `Your account has been set up and you are now part of the Gweru Specialist Children's Hospital team.`,
+      sub: `Your account has been set up and you are now part of the team.`,
     }
   }
 
@@ -193,7 +193,7 @@ export default function WelcomeModal() {
           ? 'You have full administrative access. Your credentials are sensitive — keep them secure.'
           : userData.role === 'MANAGER'
           ? `You can manage your team in ${dept?.name || 'your department'}. Your credentials are sensitive — keep them secure.`
-          : `Welcome to the ${dept?.name || 'GSCH'} team. Your login credentials were set up by your administrator. Keep them safe and do not share them.`
+          : `Welcome to the ${dept?.name || 'our'} team. Your login credentials were set up by your administrator. Keep them safe and do not share them.`
         }
       </p>
 
@@ -232,7 +232,7 @@ export default function WelcomeModal() {
         <div className="flex items-center justify-between px-6 pt-5 pb-2">
           <div className="flex items-center space-x-2">
             <Image src="/logo.png" alt="GSCH" width={28} height={28} className="rounded" />
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">GSCH MediFile</span>
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">MediFile</span>
           </div>
           <span className="text-xs text-gray-300">{step + 1} / {steps.length}</span>
         </div>

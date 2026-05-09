@@ -34,7 +34,7 @@ export default function AdminSidebar() {
             </svg>
           </div>
           <div>
-            <p className="text-white text-xs font-bold leading-tight">GSCH Admin</p>
+            <p className="text-white text-xs font-bold leading-tight">Admin Panel</p>
             <p className="text-gray-500 text-[9px]">System Control</p>
           </div>
         </div>
