@@ -38,6 +38,7 @@ model SiteSettings {
   hospitalName String   @default("Gweru Specialist Children's Hospital")
   tagline      String   @default("Digital Record System")
   footerText   String   @default("© 2026 Gweru Specialist Children's Hospital")
+  accentColor  String?  // hex color extracted from logo e.g. "#1d4ed8"
   updatedAt    DateTime @updatedAt
 
   @@map("site_settings")

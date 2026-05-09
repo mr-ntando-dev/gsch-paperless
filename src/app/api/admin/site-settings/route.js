@@ -26,7 +26,7 @@ export async function PATCH(request) {
     }
 
     const body = await request.json()
-    const { siteName, logoUrl, hospitalName, tagline, footerText } = body
+    const { siteName, logoUrl, hospitalName, tagline, footerText, accentColor } = body
 
     const updateData = {}
     if (siteName !== undefined) updateData.siteName = siteName.trim() || 'MediFile'
@@ -34,6 +34,7 @@ export async function PATCH(request) {
     if (hospitalName !== undefined) updateData.hospitalName = hospitalName.trim()
     if (tagline !== undefined) updateData.tagline = tagline.trim()
     if (footerText !== undefined) updateData.footerText = footerText.trim()
+    if (accentColor !== undefined) updateData.accentColor = accentColor || null
 
     const settings = await prisma.siteSettings.upsert({
       where: { id: 'singleton' },

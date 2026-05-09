@@ -8,16 +8,16 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          50: '#e6f7f7',
-          100: '#b3e8e8',
-          200: '#80d9d9',
-          300: '#4dcaca',
-          400: '#26bfbf',
-          500: '#009999',
-          600: '#008080',
-          700: '#006666',
-          800: '#004d4d',
-          900: '#003333',
+          50: 'var(--primary-50, #e6f7f7)',
+          100: 'var(--primary-100, #b3e8e8)',
+          200: 'var(--primary-200, #80d9d9)',
+          300: 'var(--primary-300, #4dcaca)',
+          400: 'var(--primary-400, #26bfbf)',
+          500: 'var(--primary-500, #009999)',
+          600: 'var(--primary-600, #008080)',
+          700: 'var(--primary-700, #006666)',
+          800: 'var(--primary-800, #004d4d)',
+          900: 'var(--primary-900, #003333)',
         },
         accent: {
           50: '#fde8e8',

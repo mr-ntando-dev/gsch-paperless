@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getSession, isSuperAdmin } from '@/lib/auth'
+import { extractDominantColor } from '@/lib/extractColor'
 
 // POST /api/admin/upload-logo — SUPERADMIN only
 // Accepts multipart/form-data with a "logo" file field
@@ -35,10 +36,16 @@ export async function POST(request) {
     const base64 = Buffer.from(arrayBuffer).toString('base64')
     const dataUrl = `data:${file.type};base64,${base64}`
 
+    // Extract dominant color from logo for auto-theming
+    const accentColor = extractDominantColor(arrayBuffer, file.type)
+
+    const updateData = { logoUrl: dataUrl }
+    if (accentColor) updateData.accentColor = accentColor
+
     const settings = await prisma.siteSettings.upsert({
       where: { id: 'singleton' },
-      update: { logoUrl: dataUrl },
-      create: { id: 'singleton', siteName: 'MediFile', logoUrl: dataUrl },
+      update: updateData,
+      create: { id: 'singleton', siteName: 'MediFile', logoUrl: dataUrl, accentColor },
     })
 
     // Audit log
@@ -54,7 +61,7 @@ export async function POST(request) {
       })
     } catch (_) {}
 
-    return NextResponse.json({ logoUrl: settings.logoUrl, message: 'Logo updated successfully' })
+    return NextResponse.json({ logoUrl: settings.logoUrl, accentColor: settings.accentColor, message: 'Logo updated successfully' })
   } catch (error) {
     console.error('upload-logo POST error:', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })

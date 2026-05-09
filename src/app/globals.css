@@ -3,6 +3,19 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --primary-50: #e6f7f7;
+    --primary-100: #b3e8e8;
+    --primary-200: #80d9d9;
+    --primary-300: #4dcaca;
+    --primary-400: #26bfbf;
+    --primary-500: #009999;
+    --primary-600: #008080;
+    --primary-700: #006666;
+    --primary-800: #004d4d;
+    --primary-900: #003333;
+  }
+
   body {
     @apply bg-gray-50 text-gray-900 antialiased;
     font-feature-settings: "cv11", "ss01";

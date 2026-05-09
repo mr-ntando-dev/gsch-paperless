@@ -2,10 +2,11 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import AuthProvider from '@/components/AuthProvider'
 import AppShell from '@/components/AppShell'
+import ThemeProvider from '@/components/ThemeProvider'
 
 export const metadata = {
-  title: 'GSCH - Gweru Specialist Children\'s Hospital',
-  description: 'Digital Document Management System for Gweru Specialist Children\'s Hospital',
+  title: 'MediFile - Digital Record Management',
+  description: 'Digital Record Management System',
 }
 
 export default function RootLayout({ children }) {
@@ -13,10 +14,12 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="min-h-screen bg-gray-50">
         <AuthProvider>
-          <AppShell>
-            {children}
-            <Toaster position="top-right" />
-          </AppShell>
+          <ThemeProvider>
+            <AppShell>
+              {children}
+              <Toaster position="top-right" />
+            </AppShell>
+          </ThemeProvider>
         </AuthProvider>
       </body>
     </html>
