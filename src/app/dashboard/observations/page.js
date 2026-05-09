@@ -215,9 +215,6 @@ function ObservationsContent() {
           )}
         </div>
       </div>
-    </div>
-  )
-}
 
       {vitalsModal.open && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
