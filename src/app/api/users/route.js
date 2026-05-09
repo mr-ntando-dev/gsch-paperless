@@ -25,6 +25,7 @@ export async function GET() {
         firstLogin: true,
         createdAt: true,
         createdByAdmin: true,
+        isRosterManager: true,
       },
       orderBy: { name: 'asc' },
     })

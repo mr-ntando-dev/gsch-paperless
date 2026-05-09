@@ -8,7 +8,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [editUser, setEditUser] = useState(null)
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'STAFF', departmentId: '' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'STAFF', departmentId: '', isRosterManager: false })
   const [submitting, setSubmitting] = useState(false)
   const [filter, setFilter] = useState('')
 
@@ -57,8 +57,18 @@ export default function AdminUsersPage() {
 
   const openEdit = (user) => {
     setEditUser(user)
-    setForm({ name: user.name, email: user.email, password: '', role: user.role, departmentId: user.departmentId || '' })
+    setForm({ name: user.name, email: user.email, password: '', role: user.role, departmentId: user.departmentId || '', isRosterManager: user.isRosterManager || false })
     setShowCreate(true)
+  }
+
+  const toggleRosterManager = async (user) => {
+    const res = await fetch(`/api/users/${user.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isRosterManager: !user.isRosterManager })
+    })
+    if (res.ok) { toast.success(`Roster Manager ${user.isRosterManager ? 'removed' : 'assigned'}`); fetchAll() }
+    else toast.error('Failed to update')
   }
 
   const filtered = users.filter(u =>
@@ -135,6 +145,12 @@ export default function AdminUsersPage() {
                   {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
               </div>
+              <div className="flex items-center gap-3 pt-1">
+                <input type="checkbox" id="rosterMgr" checked={form.isRosterManager} onChange={e => setForm({...form, isRosterManager: e.target.checked})} className="w-4 h-4 accent-red-500" />
+                <label htmlFor="rosterMgr" className="text-gray-300 text-sm cursor-pointer">
+                  Roster Manager — can create duty rosters for their department
+                </label>
+              </div>
               <div className="flex space-x-3 pt-2">
                 <button type="submit" disabled={submitting}
                   className="flex-1 bg-red-700 hover:bg-red-600 text-white rounded-lg py-2 text-sm font-medium disabled:opacity-50 transition-colors">
@@ -162,6 +178,7 @@ export default function AdminUsersPage() {
                 <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Department</th>
                 <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Role</th>
                 <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Status</th>
+                <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Roster Mgr</th>
                 <th className="text-left px-4 py-3 text-gray-400 text-xs uppercase tracking-wide">Actions</th>
               </tr>
             </thead>
@@ -178,6 +195,11 @@ export default function AdminUsersPage() {
                     <span className={`px-2 py-0.5 rounded text-xs ${user.isActive ? 'bg-green-900/50 text-green-400' : 'bg-gray-800 text-gray-500'}`}>
                       {user.isActive ? 'Active' : 'Inactive'}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button onClick={() => toggleRosterManager(user)} className={`text-xs px-2 py-0.5 rounded ${user.isRosterManager ? 'bg-teal-900 text-teal-300' : 'bg-gray-800 text-gray-500 hover:text-gray-300'}`}>
+                      {user.isRosterManager ? '✓ Enabled' : 'Grant'}
+                    </button>
                   </td>
                   <td className="px-4 py-3 flex space-x-2">
                     <button onClick={() => openEdit(user)} className="text-blue-400 hover:text-blue-300 text-xs">Edit</button>

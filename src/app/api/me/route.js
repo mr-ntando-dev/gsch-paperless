@@ -15,6 +15,7 @@ export async function GET() {
         email: true,
         role: true,
         firstLogin: true,
+        isRosterManager: true,
         createdAt: true,
         department: { select: { id: true, name: true, shortName: true, color: true, description: true } }
       }

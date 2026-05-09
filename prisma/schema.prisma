@@ -53,6 +53,7 @@ model DepartmentModel {
   routedToDocs     DocumentRoute[] @relation("RoutedTo")
   escalatedFromTasks TaskEscalation[] @relation("EscalatedFrom")
   escalatedToTasks   TaskEscalation[] @relation("EscalatedTo")
+  dutyRosters      DutyRoster[]
 
   @@map("departments")
 }
@@ -69,6 +70,7 @@ model User {
   isActive       Boolean          @default(true)
   createdByAdmin Boolean          @default(false)
   firstLogin     Boolean          @default(true)
+  isRosterManager Boolean         @default(false)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -85,6 +87,13 @@ model User {
   sentRoutes      DocumentRoute[]  @relation("SentRoutes")
   escalations     TaskEscalation[] @relation("EscalatedByUser")
   shifts          ShiftRoster[]
+  dutyRosters     DutyRoster[]    @relation("RosterCreatedBy")
+  dutyEntries     DutyEntry[]
+  labRequests     LabRequest[]    @relation("LabRequestedBy")
+  labResults      LabRequest[]    @relation("LabResultEnteredBy")
+  prescriptions   Prescription[]  @relation("PrescribedBy")
+  dispensedMeds   Prescription[]  @relation("DispensedBy")
+  vitalsRecorded  VitalsRecord[]
 }
 
 model Document {
@@ -218,6 +227,9 @@ model Patient {
   kitchenRequests KitchenRequest[]
   patientMessages PatientMessage[]
   invoices      Invoice[]
+  vitalsRecords VitalsRecord[]
+  labRequests   LabRequest[]
+  prescriptions Prescription[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 }
@@ -552,5 +564,146 @@ model Vaccination {
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ─── Duty Roster (department-scoped) ───────────────────────────────────────
+model DutyRoster {
+  id           String          @id @default(cuid())
+  title        String
+  departmentId String
+  department   DepartmentModel @relation(fields: [departmentId], references: [id])
+  weekStart    String          // ISO date of Monday
+  weekEnd      String          // ISO date of Sunday
+  status       String          @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED
+  createdById  String
+  createdBy    User            @relation("RosterCreatedBy", fields: [createdById], references: [id])
+  entries      DutyEntry[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@map("duty_rosters")
+}
+
+model DutyEntry {
+  id          String     @id @default(cuid())
+  rosterId    String
+  roster      DutyRoster @relation(fields: [rosterId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  date        String     // YYYY-MM-DD
+  shiftType   String     @default("DAY") // DAY | NIGHT | ON_CALL | OFF | LEAVE
+  startTime   String?
+  endTime     String?
+  notes       String?
+  createdAt   DateTime   @default(now())
+
+  @@map("duty_entries")
+}
+
+// ─── Vitals Timeline ────────────────────────────────────────────────────────
+model VitalsRecord {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  recordedById String
+  recordedBy  User     @relation(fields: [recordedById], references: [id])
+  temperature Float?   // °C
+  pulse       Int?     // bpm
+  systolic    Int?     // mmHg
+  diastolic   Int?     // mmHg
+  spo2        Int?     // %
+  weight      Float?   // kg
+  height      Float?   // cm
+  respRate    Int?     // breaths/min
+  glucoseLevel Float?  // mmol/L
+  notes       String?  @db.Text
+  recordedAt  DateTime @default(now())
+
+  @@map("vitals_records")
+}
+
+// ─── Lab & Radiology Requests ───────────────────────────────────────────────
+model LabRequest {
+  id            String   @id @default(cuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id])
+  requestedById String
+  requestedBy   User     @relation("LabRequestedBy", fields: [requestedById], references: [id])
+  type          String   // LABORATORY | RADIOLOGY
+  testName      String
+  urgency       String   @default("ROUTINE") // ROUTINE | URGENT | STAT
+  clinicalNotes String?  @db.Text
+  status        String   @default("PENDING") // PENDING | IN_PROGRESS | COMPLETED | CANCELLED
+  result        String?  @db.Text
+  resultFileUrl String?
+  resultEnteredById String?
+  resultEnteredBy   User?   @relation("LabResultEnteredBy", fields: [resultEnteredById], references: [id])
+  resultEnteredAt   DateTime?
+  requestedAt   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("lab_requests")
+}
+
+// ─── Pharmacy ───────────────────────────────────────────────────────────────
+model PharmacyItem {
+  id            String         @id @default(cuid())
+  name          String
+  genericName   String?
+  category      String         @default("MEDICATION") // MEDICATION | SUPPLY | CONSUMABLE
+  unit          String         @default("tablet") // tablet, vial, bottle, box, etc.
+  stockLevel    Int            @default(0)
+  reorderLevel  Int            @default(10)
+  expiryDate    String?
+  batchNumber   String?
+  supplier      String?
+  unitCost      Float?
+  isActive      Boolean        @default(true)
+  prescriptions Prescription[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("pharmacy_items")
+}
+
+model Prescription {
+  id              String        @id @default(cuid())
+  patientId       String
+  patient         Patient       @relation(fields: [patientId], references: [id])
+  pharmacyItemId  String
+  pharmacyItem    PharmacyItem  @relation(fields: [pharmacyItemId], references: [id])
+  prescribedById  String
+  prescribedBy    User          @relation("PrescribedBy", fields: [prescribedById], references: [id])
+  dosage          String        // e.g. "500mg"
+  frequency       String        // e.g. "8 hourly"
+  duration        String        // e.g. "5 days"
+  route           String        @default("ORAL") // ORAL | IV | IM | TOPICAL | OTHER
+  quantity        Int
+  status          String        @default("PENDING") // PENDING | DISPENSED | CANCELLED
+  dispensedById   String?
+  dispensedBy     User?         @relation("DispensedBy", fields: [dispensedById], references: [id])
+  dispensedAt     DateTime?
+  notes           String?       @db.Text
+  allergyChecked  Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("prescriptions")
+}
+
+// ─── Bed Management ─────────────────────────────────────────────────────────
+model Bed {
+  id           String   @id @default(cuid())
+  bedNumber    String
+  wardName     String
+  departmentId String?
+  status       String   @default("AVAILABLE") // AVAILABLE | OCCUPIED | MAINTENANCE | RESERVED
+  patientId    String?  @unique
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([bedNumber, wardName])
+  @@map("beds")
 }
 
